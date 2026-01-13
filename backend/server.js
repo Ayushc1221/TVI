@@ -90,12 +90,12 @@ app.use((err, req, res, next) => {
 
 // Start Server
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log(`
   🚀 Server running in ${process.env.NODE_ENV || 'development'} mode
   📡 Port: ${PORT}
-  🌐 URL: http://localhost:${PORT}
-  📋 Health: http://localhost:${PORT}/api/health
+  🌐 URL: http://0.0.0.0:${PORT}
+  📋 Health: http://0.0.0.0:${PORT}/api/health
   `);
 });
 
