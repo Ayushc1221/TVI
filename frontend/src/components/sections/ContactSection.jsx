@@ -46,9 +46,36 @@ const ContactSection = () => {
     };
 
     const contactDetails = [
-        { icon: Mail, label: 'Email', value: 'info@techvimal.com' },
-        { icon: Phone, label: 'Phone', value: '+91 1234 567 890' },
-        { icon: MapPin, label: 'Address', value: 'Mumbai, Maharashtra, India' },
+        {
+            icon: Mail,
+            label: 'Email',
+            value: 'info@techvimalinternational.com'
+        },
+        {
+            icon: Phone,
+            label: 'Phone',
+            value: (
+                <div className="flex flex-col">
+                    <span>+91 1169268509</span>
+                </div>
+            )
+        },
+        {
+            icon: MapPin,
+            label: 'Offices',
+            value: (
+                <div className="flex flex-col gap-2">
+                    <div>
+                        <span className="font-medium text-slate-800">Corporate Office:</span>
+                        <p>1st Floor, E-160, Sector 63, Noida, U.P. 201301</p>
+                    </div>
+                    <div>
+                        <span className="font-medium text-slate-800">Registered Office:</span>
+                        <p>Plot No. 32, near Wave Cinema, Kaushambi, Ghaziabad, UP 201012</p>
+                    </div>
+                </div>
+            )
+        },
     ];
 
     return (

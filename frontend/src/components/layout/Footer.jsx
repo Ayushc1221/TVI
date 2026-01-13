@@ -40,9 +40,25 @@ const Footer = () => {
                                 <p className="text-xs text-slate-400">International Certification</p>
                             </div>
                         </div>
-                        <p className="text-slate-400 text-sm">
+                        <p className="text-slate-400 text-sm mb-6">
                             Building India's most trusted inspection & certification ecosystem.
                         </p>
+
+                        <div className="space-y-4 text-sm text-slate-400">
+                            <div>
+                                <p className="text-white font-medium">Corporate Office:</p>
+                                <p>1st Floor, E-160, Sector 63, Noida, U.P. 201301</p>
+                            </div>
+                            <div>
+                                <p className="text-white font-medium">Registered Office:</p>
+                                <p>Plot No. 32, near Wave Cinema, Kaushambi, Ghaziabad, UP 201012</p>
+                            </div>
+                            <div>
+                                <p className="text-white font-medium">Contact:</p>
+                                <p>+91 1169268509</p>
+                                <p>info@techvimalinternational.com</p>
+                            </div>
+                        </div>
                     </div>
 
                     {/* Services Links */}
