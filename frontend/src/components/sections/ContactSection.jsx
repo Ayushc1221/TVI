@@ -49,7 +49,7 @@ const ContactSection = () => {
         {
             icon: Mail,
             label: 'Email',
-            value: 'info@techvimalinternational.com'
+            value: 'connect@techvimalinternational.com'
         },
         {
             icon: Phone,

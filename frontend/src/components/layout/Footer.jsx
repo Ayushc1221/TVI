@@ -56,7 +56,7 @@ const Footer = () => {
                             <div>
                                 <p className="text-white font-medium">Contact:</p>
                                 <p>+91 1169268509</p>
-                                <p>info@techvimalinternational.com</p>
+                                <p>connect@techvimalinternational.com</p>
                             </div>
                         </div>
                     </div>
