@@ -23,6 +23,10 @@ app.use(helmet());
 const corsOptions = {
     origin: [
         process.env.FRONTEND_URL,
+        'https://techvimalinternational.com',
+        'https://www.techvimalinternational.com',
+        'http://techvimalinternational.com',
+        'http://www.techvimalinternational.com',
         'http://localhost:3000',
         'http://localhost:3001',
         'http://127.0.0.1:3000',
