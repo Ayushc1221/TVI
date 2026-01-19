@@ -9,3 +9,5 @@ export * from './common';
 
 // UI Components (shadcn/ui)
 // Note: UI components are imported directly from './ui/[component-name]'
+
+export { default as ScrollToTop } from './ScrollToTop';

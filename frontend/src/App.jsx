@@ -3,11 +3,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import { AdminLogin, AdminDashboard } from "./pages/admin";
 import { ProtectedRoute } from "./components/auth";
+import { ScrollToTop } from "./components";
 
 function App() {
   return (
     <div className="App">
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
