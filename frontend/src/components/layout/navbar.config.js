@@ -23,19 +23,19 @@ export const navbarConfig = {
 
     // Navigation Links
     navLinks: [
-        { href: '#home', label: 'Home' },
-        { href: '#about', label: 'About' },
-        { href: '#services', label: 'Services' },
-        { href: '#industries', label: 'Industries' },
-        { href: '#verification', label: 'Verify Certificate' },
-        { href: '#contact', label: 'Contact' },
+        { href: '/#home', label: 'Home' },
+        { href: '/#about', label: 'About' },
+        { href: '/#services', label: 'Services' },
+        { href: '/#industries', label: 'Industries' },
+        { href: '/#verification', label: 'Verify Certificate' },
+        { href: '/#contact', label: 'Contact' },
     ],
 
     // CTA Button
     ctaButton: {
         show: true,
-        text: 'Get Started',
-        href: '#contact',
+        text: 'Request Certification',
+        href: '/apply',
     },
 
     // Navbar Styling

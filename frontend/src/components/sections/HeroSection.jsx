@@ -1,9 +1,11 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 
 const HeroSection = () => {
+    const navigate = useNavigate();
     return (
         <section id="home" className="pt-32 pb-20 px-6 relative overflow-hidden">
             {/* Background Gradient */}
@@ -32,6 +34,7 @@ const HeroSection = () => {
                         <div className="flex flex-col sm:flex-row gap-4">
                             <Button
                                 size="lg"
+                                onClick={() => navigate('/apply')}
                                 className="bg-blue-900 hover:bg-blue-800 text-white text-lg px-8 py-6"
                             >
                                 Request Certification

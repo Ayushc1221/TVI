@@ -28,7 +28,7 @@ const Navbar = ({
             <div className={`max-w-7xl mx-auto px-6 ${styles.height}`}>
                 <div className="flex items-center justify-between">
                     {/* Logo & Brand */}
-                    <a href="#home" className="flex items-center space-x-3">
+                    <a href="/" className="flex items-center space-x-3">
                         <img
                             src={logo.src}
                             alt={logo.alt}
