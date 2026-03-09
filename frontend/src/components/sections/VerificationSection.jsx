@@ -1,18 +1,37 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { QrCode, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
 import { Input } from '../ui/input';
-import { mockData } from '../../utils/mockData';
 
 const VerificationSection = () => {
     const [certificateId, setCertificateId] = useState('');
     const [verificationResult, setVerificationResult] = useState(null);
+    const [loading, setLoading] = useState(false);
 
-    const handleVerification = (e) => {
+    const handleVerification = async (e) => {
         e.preventDefault();
-        const result = mockData.certificates.find(cert => cert.id === certificateId);
-        setVerificationResult(result || { valid: false });
+        if (!certificateId.trim()) return;
+
+        setLoading(true);
+        setVerificationResult(null);
+
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const response = await fetch(`${apiUrl}/certificates/verify/${certificateId}`);
+            const data = await response.json();
+
+            if (data.success) {
+                setVerificationResult({ ...data.data, valid: true });
+            } else {
+                setVerificationResult({ valid: false });
+            }
+        } catch (error) {
+            console.error('Verification error:', error);
+            setVerificationResult({ valid: false });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -44,9 +63,10 @@ const VerificationSection = () => {
                         <Button
                             type="submit"
                             size="lg"
-                            className="bg-white text-blue-900 hover:bg-slate-100 px-8"
+                            disabled={loading || !certificateId.trim()}
+                            className="bg-white text-blue-900 hover:bg-slate-100 px-8 disabled:opacity-50"
                         >
-                            Verify
+                            {loading ? 'Verifying...' : 'Verify'}
                         </Button>
                     </div>
                 </form>
@@ -55,34 +75,45 @@ const VerificationSection = () => {
                 {verificationResult && (
                     <Card className="mt-8 bg-white/10 backdrop-blur-lg border-white/20">
                         <CardContent className="pt-6">
-                            {verificationResult.valid !== false ? (
-                                <div className="text-left space-y-3">
-                                    <div className="flex items-center gap-2 text-green-400 text-lg font-semibold">
+                            {verificationResult.valid ? (
+                                <div className="text-left space-y-4">
+                                    <div className="flex items-center gap-2 text-green-400 text-xl font-bold bg-green-400/10 p-3 rounded-lg border border-green-400/20">
                                         <CheckCircle className="w-6 h-6" />
-                                        Valid Certificate
+                                        Certificate Verified
                                     </div>
-                                    <div className="grid grid-cols-2 gap-4 text-white">
-                                        <div>
-                                            <div className="text-slate-400 text-sm">Company</div>
-                                            <div className="font-medium">{verificationResult.company}</div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 bg-slate-900/40 p-5 rounded-xl border border-white/10">
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Company Name</div>
+                                            <div className="text-white text-lg font-bold">{verificationResult.companyName}</div>
                                         </div>
-                                        <div>
-                                            <div className="text-slate-400 text-sm">Standard</div>
-                                            <div className="font-medium">{verificationResult.standard}</div>
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Certification</div>
+                                            <div className="text-white text-lg font-bold">{verificationResult.certificationType}</div>
                                         </div>
-                                        <div>
-                                            <div className="text-slate-400 text-sm">Issue Date</div>
-                                            <div className="font-medium">{verificationResult.issueDate}</div>
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Certificate Number</div>
+                                            <div className="text-white font-medium">{verificationResult.certificateNumber}</div>
                                         </div>
-                                        <div>
-                                            <div className="text-slate-400 text-sm">Valid Until</div>
-                                            <div className="font-medium">{verificationResult.expiryDate}</div>
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Status</div>
+                                            <div className={`font-medium ${verificationResult.status === 'Active' ? 'text-green-400' : 'text-red-400'}`}>{verificationResult.status}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Issue Date</div>
+                                            <div className="text-white font-medium">{new Date(verificationResult.issueDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <div className="text-slate-400 text-xs font-semibold tracking-wider uppercase">Expiry Date</div>
+                                            <div className="text-white font-medium">{new Date(verificationResult.expiryDate).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}</div>
                                         </div>
                                     </div>
                                 </div>
                             ) : (
-                                <div className="text-center text-red-400">
-                                    <p className="text-lg font-semibold">Certificate not found or invalid</p>
+                                <div className="text-center bg-red-500/10 border border-red-500/20 rounded-xl p-6">
+                                    <div className="inline-flex items-center gap-2 text-red-400 text-xl font-bold mb-2">
+                                        Certificate Not Found <span role="img" aria-label="cross">❌</span>
+                                    </div>
+                                    <p className="text-slate-300">The certificate ID you entered does not exist in our records.</p>
                                 </div>
                             )}
                         </CardContent>

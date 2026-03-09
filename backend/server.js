@@ -9,6 +9,8 @@ const connectDB = require('./src/config/database');
 const authRoutes = require('./src/routes/auth.routes');
 const contactRoutes = require('./src/routes/contact.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
+const templateRoutes = require('./src/routes/template.routes');
+const certificateRoutes = require('./src/routes/certificate.routes');
 
 // Initialize Express App
 const app = express();
@@ -81,6 +83,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/contact', contactRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/templates', templateRoutes);
+app.use('/api/certificates', certificateRoutes);
 
 // 404 Handler
 app.use((req, res) => {

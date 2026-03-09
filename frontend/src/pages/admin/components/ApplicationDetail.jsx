@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState } from 'react';
-import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square } from 'lucide-react';
+import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge } from 'lucide-react';
 
 // Mock application data for demonstration purposes
 const mockApplication = {
@@ -89,9 +89,9 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
                             {app.id}
                             <span className={`px-3 py-1 text-xs font-semibold rounded-full w-max ${currentStatus === 'Approved' || currentStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                                    currentStatus === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                        currentStatus === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                            'bg-yellow-100 text-yellow-700'
+                                currentStatus === 'Rejected' ? 'bg-red-100 text-red-700' :
+                                    currentStatus === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                        'bg-yellow-100 text-yellow-700'
                                 }`}>
                                 {currentStatus}
                             </span>
@@ -244,6 +244,30 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                             </ul>
                         </div>
                     </div>
+
+                    {/* SECTION 4.5: Generated Certificate (If Completed) */}
+                    {currentStatus === 'Completed' && (
+                        <div className="bg-white rounded-2xl border border-emerald-200 shadow-sm overflow-hidden mt-6">
+                            <div className="border-b border-emerald-100 bg-emerald-50 px-6 py-4 flex items-center gap-2">
+                                <FileBadge className="w-5 h-5 text-emerald-600" />
+                                <h3 className="font-bold text-slate-800">Generated Certificate</h3>
+                            </div>
+                            <div className="p-4 sm:px-6 flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center shrink-0">
+                                        <FileBadge className="w-5 h-5" />
+                                    </div>
+                                    <div>
+                                        <p className="font-medium text-slate-800 text-sm">Official Certificate.pdf</p>
+                                        <p className="text-xs text-slate-500 font-medium mt-0.5">Application: {app.id}</p>
+                                    </div>
+                                </div>
+                                <button className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors transition-all">
+                                    <Download className="w-4 h-4" /> Download
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     {/* SECTION 5: Payment Information */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

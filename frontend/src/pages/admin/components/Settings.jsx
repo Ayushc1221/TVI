@@ -1,7 +1,9 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Bell, DollarSign, Power, Save } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, DollarSign, Power, Save, FileBadge, ArrowRight } from 'lucide-react';
+import CertificateTemplates from './CertificateTemplates';
 
 const Settings = () => {
+    const [currentView, setCurrentView] = useState('settings');
     // Mock settings state
     const [services, setServices] = useState({
         iso: true,
@@ -29,18 +31,30 @@ const Settings = () => {
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
     };
 
+    if (currentView === 'certificate-templates') {
+        return <CertificateTemplates onBack={() => setCurrentView('settings')} />;
+    }
+
     return (
         <div className="max-w-4xl mx-auto space-y-6">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
+            <div className="flex flex-col sm:flex-row items-start justify-between pb-4 border-b border-slate-200 gap-4">
                 <div>
                     <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         <SettingsIcon className="w-6 h-6 text-slate-500" /> Platform Settings
                     </h2>
                     <p className="text-slate-500 text-sm mt-1">Manage platform configuration and preferences</p>
                 </div>
-                <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-sm transition-colors text-sm">
-                    <Save className="w-4 h-4" /> Save Changes
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => setCurrentView('certificate-templates')}
+                        className="flex items-center gap-2 px-6 py-2.5 bg-white border border-slate-200 hover:border-blue-500 hover:text-blue-600 rounded-xl font-semibold shadow-sm transition-colors text-sm text-slate-700"
+                    >
+                        <FileBadge className="w-4 h-4" /> Manage Certificate Templates <ArrowRight className="w-4 h-4 ml-1" />
+                    </button>
+                    <button className="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-sm transition-colors text-sm">
+                        <Save className="w-4 h-4" /> Save Changes
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6">
