@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     Search,
     Filter,
@@ -6,27 +7,56 @@ import {
     Eye,
     Calendar,
     ChevronDown,
+    Loader2
 } from 'lucide-react';
+import { paymentApi } from '../../../services';
 
 // eslint-disable-next-line react/prop-types
 const Payments = ({ onViewApplication }) => {
+    const [paymentsList, setPaymentsList] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [total, setTotal] = useState(0);
+
+    const fetchPayments = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            const response = await paymentApi.getAll({ page, limit: 20 });
+            if (response.success) {
+                setPaymentsList(response.data);
+                setTotalPages(response.pages || 1);
+                setTotal(response.total || 0);
+            }
+        } catch (err) {
+            setError('Failed to load payments');
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchPayments();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]);
+
     const getPaymentBadge = (status) => {
         switch (status) {
-            case 'Paid': return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">Paid</span>;
-            case 'Pending': return <span className="px-2.5 py-1 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full">Pending</span>;
-            case 'Failed': return <span className="px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full">Failed</span>;
+            case 'completed': return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full">Paid</span>;
+            case 'pending': return <span className="px-2.5 py-1 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full">Pending</span>;
+            case 'failed': return <span className="px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full">Failed</span>;
+            case 'refunded': return <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full">Refunded</span>;
             default: return <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-full">{status}</span>;
         }
     };
 
-    const paymentsList = [
-        { payId: 'PAY-8923Z9X', appId: 'APP-2023-001', company: 'Tech Corp India', service: 'ISO Certification', amount: '₹ 25,000.00', method: 'Razorpay', status: 'Paid', date: '21 Oct 2023' },
-        { payId: 'PAY-1123P4Q', appId: 'APP-2023-002', company: 'Global Exports', service: 'Audit', amount: '₹ 15,000.00', method: 'UPI', status: 'Paid', date: '19 Oct 2023' },
-        { payId: 'PAY-9045K8M', appId: 'APP-2023-003', company: 'Sunrise Manufacturing', service: 'HRAA', amount: '₹ 30,000.00', method: 'Card', status: 'Pending', date: '15 Oct 2023' },
-        { payId: 'PAY-8821L6J', appId: 'APP-2023-004', company: 'Apex IT Solutions', service: 'ISO Certification', amount: '₹ 25,000.00', method: 'Razorpay', status: 'Failed', date: '12 Oct 2023' },
-        { payId: 'PAY-5532N9L', appId: 'APP-2023-005', company: 'Dynamic Logistics', service: 'Audit', amount: '₹ 15,000.00', method: 'UPI', status: 'Paid', date: '10 Oct 2023' },
-        { payId: 'PAY-7711B3Y', appId: 'APP-2023-006', company: 'Vertex Solutions', service: 'ISO Certification', amount: '₹ 25,000.00', method: 'Card', status: 'Paid', date: '08 Oct 2023' },
-    ];
+    const formatDate = (dateStr) => {
+        if (!dateStr) return '-';
+        return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
 
     return (
         <div className="space-y-6">
@@ -66,62 +96,80 @@ const Payments = ({ onViewApplication }) => {
 
             {/* Payments Table */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 font-semibold">
-                                <th className="px-6 py-4 whitespace-nowrap">Payment ID</th>
-                                <th className="px-6 py-4 whitespace-nowrap">App ID</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Company Name</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Service Type</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Amount</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Method</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Status</th>
-                                <th className="px-6 py-4 whitespace-nowrap">Date</th>
-                                <th className="px-6 py-4 text-center whitespace-nowrap">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {paymentsList.map((payment) => (
-                                <tr key={payment.payId} className="hover:bg-slate-50 transition-colors group">
-                                    <td className="px-6 py-4 text-sm font-semibold text-slate-800 whitespace-nowrap">{payment.payId}</td>
-                                    <td className="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap">{payment.appId}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">{payment.company}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">{payment.service}</td>
-                                    <td className="px-6 py-4 text-sm font-semibold text-slate-800 whitespace-nowrap">{payment.amount}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{payment.method}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">{getPaymentBadge(payment.status)}</td>
-                                    <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{payment.date}</td>
-                                    <td className="px-6 py-4 text-center whitespace-nowrap">
-                                        <button
-                                            onClick={() => onViewApplication(payment.appId)}
-                                            className="inline-flex items-center justify-center px-3 py-1.5 border border-slate-200 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm"
-                                        >
-                                            <Eye className="w-4 h-4 mr-1.5" /> View App
-                                        </button>
-                                    </td>
+                {loading ? (
+                    <div className="flex items-center justify-center p-12">
+                        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                        <span className="ml-3 text-slate-500 font-medium">Loading payments...</span>
+                    </div>
+                ) : error ? (
+                    <div className="text-center p-12 text-red-500 font-medium">{error}</div>
+                ) : paymentsList.length === 0 ? (
+                    <div className="text-center p-12 text-slate-400 font-medium">No payments found.</div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 font-semibold">
+                                    <th className="px-6 py-4 whitespace-nowrap">Payment ID</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">App ID</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Amount</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Method</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Status</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Transaction ID</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Date</th>
+                                    <th className="px-6 py-4 text-center whitespace-nowrap">Action</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {paymentsList.map((payment) => (
+                                    <tr key={payment.paymentId} className="hover:bg-slate-50 transition-colors group">
+                                        <td className="px-6 py-4 text-sm font-semibold text-slate-800 whitespace-nowrap">{payment.paymentId}</td>
+                                        <td className="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap">{payment.applicationId}</td>
+                                        <td className="px-6 py-4 text-sm font-semibold text-slate-800 whitespace-nowrap">₹ {payment.amount?.toLocaleString('en-IN')}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{payment.paymentMethod}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap">{getPaymentBadge(payment.paymentStatus)}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{payment.transactionId || '-'}</td>
+                                        <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{formatDate(payment.createdAt)}</td>
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            <button
+                                                onClick={() => onViewApplication(payment.applicationId)}
+                                                className="inline-flex items-center justify-center px-3 py-1.5 border border-slate-200 text-sm font-medium rounded-lg text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-200 transition-colors shadow-sm"
+                                            >
+                                                <Eye className="w-4 h-4 mr-1.5" /> View App
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
 
                 {/* Pagination Box */}
-                <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                    <span className="text-sm text-slate-500 font-medium">Showing 1 to 6 of 842 entries</span>
-                    <div className="flex items-center gap-2">
-                        <button className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50" disabled>
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button className="w-8 h-8 rounded-lg bg-blue-600 text-white text-sm font-medium shadow-sm transition-colors">1</button>
-                        <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-medium hover:bg-slate-100 transition-colors">2</button>
-                        <button className="w-8 h-8 rounded-lg border border-slate-200 bg-white text-slate-600 text-sm font-medium hover:bg-slate-100 transition-colors">3</button>
-                        <span className="text-slate-400">...</span>
-                        <button className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors">
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
+                {!loading && paymentsList.length > 0 && (
+                    <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+                        <span className="text-sm text-slate-500 font-medium">
+                            Page {page} of {totalPages} ({total} total)
+                        </span>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page <= 1}
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                <ChevronLeft className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 h-8 rounded-lg bg-blue-600 text-white text-sm font-medium flex items-center justify-center">{page}</span>
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page >= totalPages}
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors disabled:opacity-50"
+                            >
+                                <ChevronRight className="w-4 h-4" />
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         </div>
     );

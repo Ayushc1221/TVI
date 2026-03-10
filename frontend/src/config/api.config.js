@@ -35,6 +35,21 @@ export const API_ENDPOINTS = {
     DASHBOARD_STATS: '/dashboard/stats',
     DASHBOARD_ANALYTICS: '/dashboard/analytics',
 
+    // Applications
+    APPLICATIONS: '/applications',
+    APPLICATION_BY_ID: (id) => `/applications/${id}`,
+    APPLICATION_ASSIGN_AUDITOR: '/applications/assign-auditor',
+    APPLICATION_STATUS: '/applications/status',
+
+    // Certificates
+    CERTIFICATE_GENERATE: '/certificates/generate',
+    CERTIFICATE_DOWNLOAD: (id) => `/certificates/download/${id}`,
+    TEMPLATES: '/templates',
+    CERTIFICATE_VERIFY: (certNumber) => `/certificates/verify/${certNumber}`,
+
+    // Payments
+    PAYMENTS: '/payments',
+
     // Health
     HEALTH: '/health',
 };

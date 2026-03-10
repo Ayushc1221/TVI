@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, UploadCloud, FileText, ChevronRight, Shield, ScrollText, Users } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, UploadCloud, FileText, ChevronRight, Shield, ScrollText, Users, Loader2 } from 'lucide-react';
 import { Navbar, Footer } from '../components/layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
+import { applicationApi } from '../services';
 
 const SERVICES = [
     {
@@ -43,6 +44,7 @@ const AUDIT_CATEGORIES = [
 const Application = () => {
     const [selectedService, setSelectedService] = useState(null);
     const [currentStep, setCurrentStep] = useState(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [formData, setFormData] = useState({
         // Step 1: Company Details
         companyName: '',
@@ -250,13 +252,59 @@ const Application = () => {
         window.scrollTo(0, 0);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (validateStep()) {
-            console.log("Submitted Data: ", formData);
-            alert("Application Submitted Successfully!");
-            // Reset or Redirect logic here
-            setSelectedService(null);
-            setCurrentStep(1);
+            setIsSubmitting(true);
+            try {
+                const data = new FormData();
+
+                // Append all text fields
+                Object.keys(formData).forEach(key => {
+                    if (key !== 'docs' && key !== 'isoStandards' && key !== 'auditCategories') {
+                        data.append(key, formData[key]);
+                    }
+                });
+
+                // Append special fields
+                data.append('serviceType', selectedService);
+                data.append('isoStandards', JSON.stringify(formData.isoStandards));
+                data.append('auditCategories', JSON.stringify(formData.auditCategories));
+
+                // Unified contact person field for backend model compatibility
+                data.append('contactPerson', formData.contactName);
+                data.append('phone', formData.mobile);
+                data.append('serviceFee', calculateFee().toString());
+                data.append('paymentStatus', 'Completed'); // Set to completed since it's a mock payment flow
+
+                // Append files
+                Object.keys(formData.docs).forEach(key => {
+                    if (formData.docs[key]) {
+                        data.append(key, formData.docs[key]);
+                    }
+                });
+
+                const response = await applicationApi.submit(data);
+
+                if (response.success) {
+                    alert(`Application Submitted Successfully! Your Application ID is: ${response.data.applicationId}`);
+                    // Reset or Redirect logic here
+                    setSelectedService(null);
+                    setCurrentStep(1);
+                    setFormData({
+                        companyName: '', businessType: '', industryType: '', companyAddress: '', city: '', state: '', country: 'India', pinCode: '', gstNumber: '', companyWebsite: '',
+                        contactName: '', designation: '', email: '', mobile: '', alternateMobile: '',
+                        isoStandards: [], numEmployees: '', scopeOfBusiness: '', certificationDuration: '', existingIso: '',
+                        auditServiceType: '', auditCategories: [], siteLocation: '', numLocations: '', preferredMode: '', tentativeDate: '',
+                        hraaType: '', hraaEmployees: '', payrollManaged: '', hrPolicies: '', labourLawCompliance: '',
+                        docs: {}, paymentMethod: '', termsAgreed: false,
+                    });
+                }
+            } catch (err) {
+                console.error("Submission Error:", err);
+                alert(err.message || "Failed to submit application. Please try again.");
+            } finally {
+                setIsSubmitting(false);
+            }
         }
     };
 
@@ -658,7 +706,12 @@ const Application = () => {
                                 {/* NAVIGATION BUTTONS */}
                                 <div className="mt-10 pt-6 border-t border-slate-100 flex items-center justify-between">
                                     {currentStep > 1 ? (
-                                        <Button variant="outline" onClick={handlePrev} className="px-6 py-6 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold">
+                                        <Button
+                                            variant="outline"
+                                            onClick={handlePrev}
+                                            disabled={isSubmitting}
+                                            className="px-6 py-6 border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold"
+                                        >
                                             Previous Step
                                         </Button>
                                     ) : (
@@ -666,12 +719,25 @@ const Application = () => {
                                     )}
 
                                     {currentStep < 5 ? (
-                                        <Button onClick={handleNext} className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all">
+                                        <Button
+                                            onClick={handleNext}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all"
+                                        >
                                             Proceed Next Step <ChevronRight className="ml-2 w-5 h-5" />
                                         </Button>
                                     ) : (
-                                        <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-lg">
-                                            Submit & Pay
+                                        <Button
+                                            onClick={handleSubmit}
+                                            disabled={isSubmitting}
+                                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-6 font-semibold rounded-lg shadow-md hover:shadow-lg transition-all text-lg min-w-[200px]"
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Submitting...
+                                                </>
+                                            ) : (
+                                                'Submit & Pay'
+                                            )}
                                         </Button>
                                     )}
                                 </div>

@@ -1,9 +1,20 @@
 import { useState } from 'react';
-import { Settings as SettingsIcon, Bell, DollarSign, Power, Save, FileBadge, ArrowRight } from 'lucide-react';
+import { Settings as SettingsIcon, Bell, DollarSign, Power, Save, FileBadge, ArrowRight, Shield, Loader2 } from 'lucide-react';
 import CertificateTemplates from './CertificateTemplates';
+import { authApi } from '../../../services';
 
 const Settings = () => {
     const [currentView, setCurrentView] = useState('settings');
+    const [loading, setLoading] = useState(false);
+
+    // Password state
+    const [passwords, setPasswords] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+    });
+    const [pwdMsg, setPwdMsg] = useState({ text: '', type: '' });
+
     // Mock settings state
     const [services, setServices] = useState({
         iso: true,
@@ -29,6 +40,46 @@ const Settings = () => {
 
     const handleToggleNotification = (key) => {
         setNotifications(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        setPwdMsg({ text: '', type: '' });
+
+        if (!passwords.currentPassword || !passwords.newPassword) {
+            setPwdMsg({ text: 'Please fill in all fields', type: 'error' });
+            return;
+        }
+
+        if (passwords.newPassword !== passwords.confirmPassword) {
+            setPwdMsg({ text: 'New passwords do not match', type: 'error' });
+            return;
+        }
+
+        if (passwords.newPassword.length < 6) {
+            setPwdMsg({ text: 'Password must be at least 6 characters', type: 'error' });
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const res = await authApi.changePassword({
+                currentPassword: passwords.currentPassword,
+                newPassword: passwords.newPassword
+            });
+
+            if (res.success) {
+                setPwdMsg({ text: 'Password updated successfully!', type: 'success' });
+                setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+            } else {
+                setPwdMsg({ text: res.message || 'Failed to update password', type: 'error' });
+            }
+        } catch (err) {
+            console.error(err);
+            setPwdMsg({ text: err.response?.data?.message || 'Server error', type: 'error' });
+        } finally {
+            setLoading(false);
+        }
     };
 
     if (currentView === 'certificate-templates') {
@@ -58,6 +109,64 @@ const Settings = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-6">
+
+                {/* Account Security (Actual API Integration) */}
+                <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
+                        <Shield className="w-5 h-5 text-red-500" />
+                        <h3 className="font-bold text-slate-800">Account Security</h3>
+                    </div>
+                    <div className="p-6">
+                        <form onSubmit={handlePasswordChange} className="space-y-4 max-w-lg">
+                            <h4 className="font-semibold text-slate-700 text-sm mb-4">Change Admin Password</h4>
+
+                            {pwdMsg.text && (
+                                <div className={`p-3 rounded-lg text-sm font-medium ${pwdMsg.type === 'error' ? 'bg-red-50 text-red-600 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
+                                    {pwdMsg.text}
+                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1">Current Password</label>
+                                <input
+                                    type="password"
+                                    value={passwords.currentPassword}
+                                    onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter current password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1">New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwords.newPassword}
+                                    onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Enter new password"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-500 mb-1">Confirm New Password</label>
+                                <input
+                                    type="password"
+                                    value={passwords.confirmPassword}
+                                    onChange={(e) => setPasswords({ ...passwords, confirmPassword: e.target.value })}
+                                    className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Confirm new password"
+                                />
+                            </div>
+                            <button
+                                type="submit"
+                                disabled={loading}
+                                className="mt-2 flex items-center gap-2 px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                                {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Update Password
+                            </button>
+                        </form>
+                    </div>
+                </section>
 
                 {/* 1. Service Configuration */}
                 <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">

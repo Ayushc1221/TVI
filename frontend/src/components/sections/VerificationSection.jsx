@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { QrCode, CheckCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent } from '../ui/card';
@@ -8,6 +8,35 @@ const VerificationSection = () => {
     const [certificateId, setCertificateId] = useState('');
     const [verificationResult, setVerificationResult] = useState(null);
     const [loading, setLoading] = useState(false);
+
+    // Auto-detect cert number from QR code URL (?cert=...)
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const certParam = params.get('cert');
+        if (certParam) {
+            setCertificateId(certParam);
+            // Auto-trigger verification
+            (async () => {
+                setLoading(true);
+                setVerificationResult(null);
+                try {
+                    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+                    const response = await fetch(`${apiUrl}/certificates/verify/${certParam}`);
+                    const data = await response.json();
+                    if (data.success) {
+                        setVerificationResult({ ...data.data, valid: true });
+                    } else {
+                        setVerificationResult({ valid: false });
+                    }
+                } catch (error) {
+                    console.error('Auto-verification error:', error);
+                    setVerificationResult({ valid: false });
+                } finally {
+                    setLoading(false);
+                }
+            })();
+        }
+    }, []);
 
     const handleVerification = async (e) => {
         e.preventDefault();

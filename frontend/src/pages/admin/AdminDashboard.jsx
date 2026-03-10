@@ -59,7 +59,12 @@ const AdminDashboard = () => {
         }
 
         if (activeTab === 'dashboard') {
-            return <DashboardHome />;
+            return (
+                <DashboardHome
+                    onViewApplication={(id) => setSelectedApplicationId(id)}
+                    onViewAll={() => setActiveTab('applications')}
+                />
+            );
         }
 
         if (activeTab === 'applications') {
@@ -71,7 +76,7 @@ const AdminDashboard = () => {
         }
 
         if (activeTab === 'certifications') {
-            return <CertificationAuditManagement />;
+            return <CertificationAuditManagement onViewDetails={(id) => setSelectedApplicationId(id)} />;
         }
 
         if (activeTab === 'documents') {

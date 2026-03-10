@@ -12,15 +12,6 @@ const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminU
 
             {/* Header Right */}
             <div className="flex items-center gap-2 sm:gap-4">
-                {/* Search */}
-                <div className="hidden md:flex relative mr-4">
-                    <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Quick search..."
-                        className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all w-64"
-                    />
-                </div>
 
                 {/* Notifications */}
                 <button className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">

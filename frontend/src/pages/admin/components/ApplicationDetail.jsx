@@ -1,77 +1,147 @@
 /* eslint-disable react/prop-types */
-import { useState } from 'react';
-import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge, Loader2 } from 'lucide-react';
+import { applicationApi } from '../../../services';
 
-// Mock application data for demonstration purposes
-const mockApplication = {
-    id: 'APP-2023-001',
-    status: 'Pending Review',
-    serviceType: 'iso', // 'iso', 'audit', 'hraa'
+// Fallback mock data for fields not yet in backend
+const fallbackDetails = {
     company: {
-        name: 'Tech Corp India Pvt. Ltd.',
-        businessType: 'Private Limited',
-        industryType: 'IT Services',
-        address: '123 Tech Park, Phase 1',
-        city: 'Bangalore',
-        state: 'Karnataka',
+        businessType: '-',
+        industryType: '-',
+        address: '-',
+        city: '-',
+        state: '-',
         country: 'India',
-        pincode: '560001',
-        gstNumber: '29ABCDE1234F1Z5',
-        website: 'www.techcorp.example.com'
+        pincode: '-',
+        gstNumber: '-',
+        website: '-'
     },
     contact: {
-        name: 'Rajesh Kumar',
-        designation: 'Operations Manager',
-        email: 'rajesh.k@techcorp.example.com',
-        mobile: '+91 9876543210',
-        altMobile: '+91 9123456780'
+        name: '-',
+        designation: '-',
+        email: '-',
+        mobile: '-',
+        altMobile: '-'
     },
-    documents: [
-        { id: '1', name: 'Company Registration Certificate', verified: true },
-        { id: '2', name: 'GST Certificate', verified: true },
-        { id: '3', name: 'Previous ISO Certificate', verified: false }
-    ],
+    documents: [],
     payment: {
-        serviceFee: '₹ 25,000.00',
-        paymentMethod: 'Online Payment (Razorpay)',
-        paymentId: 'pay_ABC123XYZ987',
-        paymentStatus: 'Paid'
+        serviceFee: '-',
+        paymentMethod: '-',
+        paymentId: '-',
+        paymentStatus: '-'
     },
     serviceDetails: {
-        // ISO Details
-        isoStandards: ['ISO 9001:2015', 'ISO 27001:2022'],
-        numberOfEmployees: '150+',
-        scopeOfBusiness: 'Software Development and Consulting',
-        certificationDuration: '3 Years',
-        existingCertification: 'None',
-
-        // Audit Details (if serviceType was 'audit')
-        // auditType: 'Safety Audit',
-        // auditCategory: 'Fire Safety',
-        // siteLocation: 'Bangalore Office',
-        // numberOfLocations: '2',
-        // mode: 'Onsite',
-        // tentativeDate: '2023-11-15',
-
-        // HRAA Details (if serviceType was 'hraa')
-        // hraaType: 'Full HR Audit',
-        // totalEmployees: '150',
-        // payrollMode: 'In-house software',
-        // hrPoliciesAvailable: 'Yes',
-        // complianceStatus: 'Partially Compliant'
+        isoStandards: [],
+        numberOfEmployees: '-',
+        scopeOfBusiness: '-',
+        certificationDuration: '-',
+        existingCertification: '-',
     }
 };
 
 const ApplicationDetail = ({ applicationId, onBack }) => {
-    // In a real scenario, you'd fetch data using applicationId
-    const app = { ...mockApplication, id: applicationId || mockApplication.id };
-
-    const [currentStatus, setCurrentStatus] = useState(app.status);
+    const [app, setApp] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [currentStatus, setCurrentStatus] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
 
-    const handleSaveStatus = () => {
-        alert(`Status updated to: ${currentStatus}` + (currentStatus === 'Rejected' ? `\nReason: ${rejectionReason}` : ''));
+    useEffect(() => {
+        const fetchApp = async () => {
+            setLoading(true);
+            try {
+                const response = await applicationApi.getById(applicationId);
+                if (response.success && response.data) {
+                    const d = response.data;
+                    setApp({
+                        id: d.applicationId,
+                        status: d.status,
+                        serviceType: d.serviceType?.toLowerCase() || 'iso',
+                        company: {
+                            name: d.companyName || '-',
+                            businessType: d.businessType || '-',
+                            industryType: d.industryType || '-',
+                            address: d.companyAddress || '-',
+                            city: d.city || '-',
+                            state: d.state || '-',
+                            country: d.country || 'India',
+                            pincode: d.pinCode || '-',
+                            gstNumber: d.gstNumber || '-',
+                            website: d.companyWebsite || '-'
+                        },
+                        contact: {
+                            name: d.contactPerson || '-',
+                            designation: d.designation || '-',
+                            email: d.email || '-',
+                            mobile: d.phone || '-',
+                            altMobile: d.alternateMobile || '-'
+                        },
+                        documents: d.documents || [],
+                        payment: {
+                            serviceFee: d.serviceFee || '-',
+                            paymentMethod: d.paymentMethod || '-',
+                            paymentId: d.paymentId || '-',
+                            paymentStatus: d.paymentStatus || 'Completed'
+                        },
+                        serviceDetails: {
+                            // ISO
+                            isoStandards: Array.isArray(d.certificationType) ? d.certificationType : (d.certificationType ? [d.certificationType] : []),
+                            numberOfEmployees: d.numEmployees || '-',
+                            scopeOfBusiness: d.scopeOfBusiness || '-',
+                            certificationDuration: d.certificationDuration || '-',
+                            existingCertification: d.existingIso || '-',
+                            // Audit
+                            auditType: d.auditServiceType || '-',
+                            auditCategory: Array.isArray(d.auditCategories) ? d.auditCategories.join(', ') : (d.auditCategories || '-'),
+                            siteLocation: d.siteLocation || '-',
+                            numberOfLocations: d.numLocations || '-',
+                            mode: d.preferredMode || '-',
+                            tentativeDate: d.tentativeDate || '-',
+                            // HRAA
+                            hraaType: d.hraaType || '-',
+                            totalEmployees: d.hraaEmployees || '-',
+                            payrollMode: d.payrollManaged || '-',
+                            hrPoliciesAvailable: d.hrPolicies || '-',
+                            complianceStatus: d.labourLawCompliance || '-'
+                        },
+                    });
+                    setCurrentStatus(d.status);
+                }
+            } catch (err) {
+                console.error('Failed to fetch application:', err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        if (applicationId) fetchApp();
+    }, [applicationId]);
+
+    const handleSaveStatus = async () => {
+        try {
+            await applicationApi.updateStatus({ applicationId, status: currentStatus });
+            alert(`Status updated to: ${currentStatus}` + (currentStatus === 'rejected' ? `\nReason: ${rejectionReason}` : ''));
+        } catch (err) {
+            alert('Failed to update status');
+            console.error(err);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center p-16">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+                <span className="ml-3 text-slate-500 font-medium">Loading application...</span>
+            </div>
+        );
+    }
+
+    if (!app) {
+        return (
+            <div className="text-center p-16">
+                <p className="text-red-500 font-medium">Application not found.</p>
+                <button onClick={onBack} className="mt-4 text-blue-600 underline">Go Back</button>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">
@@ -88,12 +158,12 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                     <div>
                         <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
                             {app.id}
-                            <span className={`px-3 py-1 text-xs font-semibold rounded-full w-max ${currentStatus === 'Approved' || currentStatus === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                                currentStatus === 'Rejected' ? 'bg-red-100 text-red-700' :
-                                    currentStatus === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                        'bg-yellow-100 text-yellow-700'
+                            <span className={`px-3 py-1 text-[10px] font-bold uppercase tracking-wider rounded-lg w-max ${['approved', 'completed', 'certificate_generated'].includes(currentStatus) ? 'bg-emerald-100 text-emerald-700' :
+                                    currentStatus === 'rejected' ? 'bg-red-100 text-red-700' :
+                                        ['under_review', 'audit_assigned'].includes(currentStatus) ? 'bg-blue-100 text-blue-700' :
+                                            'bg-yellow-100 text-yellow-700'
                                 }`}>
-                                {currentStatus}
+                                {currentStatus.replace('_', ' ')}
                             </span>
                         </h2>
                         <p className="text-sm text-slate-500 font-medium">Application Details</p>
@@ -231,10 +301,18 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                                 </button>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 hover:border-blue-200 bg-white shadow-sm" title="Preview">
+                                                <button
+                                                    onClick={() => window.open(`http://localhost:5000${doc.url}`, '_blank')}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 hover:border-blue-200 bg-white shadow-sm"
+                                                    title="Preview"
+                                                >
                                                     <Eye className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 hover:border-blue-200 bg-white shadow-sm" title="Download">
+                                                <button
+                                                    onClick={() => window.open(`http://localhost:5000${doc.url}`, '_blank')}
+                                                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors border border-slate-200 hover:border-blue-200 bg-white shadow-sm"
+                                                    title="Download"
+                                                >
                                                     <Download className="w-4 h-4" />
                                                 </button>
                                             </div>
@@ -323,14 +401,13 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                     value={currentStatus}
                                     onChange={(e) => setCurrentStatus(e.target.value)}
                                 >
-                                    <option value="Submitted">Submitted</option>
-                                    <option value="Under Review">Under Review</option>
-                                    <option value="Pending Review">Pending Review</option>
-                                    <option value="Documents Verified">Documents Verified</option>
-                                    <option value="In Progress">In Progress</option>
-                                    <option value="Approved">Approved</option>
-                                    <option value="Completed">Completed</option>
-                                    <option value="Rejected">Rejected</option>
+                                    <option value="submitted">Submitted</option>
+                                    <option value="under_review">Under Review</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="audit_assigned">Audit Assigned</option>
+                                    <option value="certificate_generated">Cert Generated</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="rejected">Rejected</option>
                                 </select>
                             </div>
 

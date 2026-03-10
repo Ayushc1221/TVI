@@ -38,9 +38,13 @@ class ApiService {
         const url = `${this.baseURL}${endpoint}`;
 
         const headers = {
-            'Content-Type': 'application/json',
             ...options.headers,
         };
+
+        // If body is NOT FormData, set application/json
+        if (!(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
 
         // Add auth token if available
         const token = this.getToken();
@@ -92,6 +96,16 @@ class ApiService {
     }
 
     /**
+     * POST FormData request
+     */
+    postFormData(endpoint, formData) {
+        return this.request(endpoint, {
+            method: 'POST',
+            body: formData,
+        });
+    }
+
+    /**
      * PATCH request
      */
     patch(endpoint, data = {}) {
@@ -106,6 +120,16 @@ class ApiService {
      */
     delete(endpoint) {
         return this.request(endpoint, { method: 'DELETE' });
+    }
+
+    /**
+     * PUT request
+     */
+    put(endpoint, data = {}) {
+        return this.request(endpoint, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
     }
 }
 
@@ -135,4 +159,33 @@ export const dashboardApi = {
     getAnalytics: (params) => apiService.get(API_ENDPOINTS.DASHBOARD_ANALYTICS, params),
 };
 
+// Application API
+export const applicationApi = {
+    getAll: (params) => apiService.get(API_ENDPOINTS.APPLICATIONS, params),
+    getById: (id) => apiService.get(API_ENDPOINTS.APPLICATION_BY_ID(id)),
+    submit: (formData) => apiService.postFormData(API_ENDPOINTS.APPLICATIONS, formData),
+    assignAuditor: (data) => apiService.put(API_ENDPOINTS.APPLICATION_ASSIGN_AUDITOR, data),
+    updateStatus: (data) => apiService.put(API_ENDPOINTS.APPLICATION_STATUS, data),
+};
+
+// Certificate API
+export const certificateApi = {
+    generate: (data) => apiService.post(API_ENDPOINTS.CERTIFICATE_GENERATE, data),
+    download: (id) => `${apiService.baseURL}${API_ENDPOINTS.CERTIFICATE_DOWNLOAD(id)}`,
+    verify: (certNumber) => apiService.get(API_ENDPOINTS.CERTIFICATE_VERIFY(certNumber)),
+};
+
+// Payment API
+export const paymentApi = {
+    getAll: (params) => apiService.get(API_ENDPOINTS.PAYMENTS, params),
+    create: (data) => apiService.post(API_ENDPOINTS.PAYMENTS, data),
+};
+
+// Template API
+export const templateApi = {
+    getAll: () => apiService.get(API_ENDPOINTS.TEMPLATES),
+    upload: (data) => apiService.post(API_ENDPOINTS.TEMPLATES, data),
+};
+
 export default apiService;
+

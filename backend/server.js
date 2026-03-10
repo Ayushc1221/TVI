@@ -11,6 +11,11 @@ const contactRoutes = require('./src/routes/contact.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
 const templateRoutes = require('./src/routes/template.routes');
 const certificateRoutes = require('./src/routes/certificate.routes');
+const applicationRoutes = require('./src/routes/application.routes');
+const certGenRoutes = require('./src/routes/certGen.routes');
+const paymentRoutes = require('./src/routes/payment.routes');
+const verificationRoutes = require('./src/routes/verification.routes');
+const path = require('path');
 
 // Initialize Express App
 const app = express();
@@ -52,8 +57,8 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 
 // Body Parser
-app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Logging (only in development)
 if (process.env.NODE_ENV === 'development') {
@@ -85,6 +90,13 @@ app.use('/api/contact', contactRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/templates', templateRoutes);
 app.use('/api/certificates', certificateRoutes);
+app.use('/api/applications', applicationRoutes);
+app.use('/api/certificates', certGenRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/verify', verificationRoutes);
+
+// Static file serving for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 404 Handler
 app.use((req, res) => {

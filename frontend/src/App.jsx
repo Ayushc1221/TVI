@@ -2,6 +2,7 @@ import "./App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Application from "./pages/Application";
+import VerifyPage from "./pages/VerifyPage";
 import { AdminLogin, AdminDashboard } from "./pages/admin";
 import { ProtectedRoute } from "./components/auth";
 import { ScrollToTop } from "./components";
@@ -15,6 +16,7 @@ function App() {
           {/* Public Routes */}
           <Route path="/" element={<Home />} />
           <Route path="/apply" element={<Application />} />
+          <Route path="/verify" element={<VerifyPage />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
