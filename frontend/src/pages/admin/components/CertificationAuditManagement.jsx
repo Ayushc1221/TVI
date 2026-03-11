@@ -11,7 +11,8 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
     const [applications, setApplications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterService, setFilterService] = useState('All Services');
+    const [filterService, setFilterService] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
 
     const [expandedId, setExpandedId] = useState(null);
     const [showGenerateModal, setShowGenerateModal] = useState(null);
@@ -30,17 +31,35 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
     const [sequenceCounters, setSequenceCounters] = useState({ iso: 1, audit: 1, hraa: 1 });
 
     useEffect(() => {
-        fetchWorkflowApps();
-    }, []);
+        const delayDebounceFn = setTimeout(() => {
+            fetchWorkflowApps();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchTerm, filterService, filterStatus]);
 
     const fetchWorkflowApps = async () => {
         setLoading(true);
         try {
-            // Fetch applications that are past "submitted" (meaning they need workflow, audit, or cert)
-            const res = await applicationApi.getAll({ limit: 500 });
+            const params = { limit: 100 };
+            if (searchTerm) params.search = searchTerm;
+            if (filterService) params.serviceType = filterService;
+            if (filterStatus) params.status = filterStatus;
+
+            const res = await applicationApi.getAll(params);
             if (res.success) {
+                // Determine which statuses constitute "workflow"
+                const workflowStatuses = ['approved', 'under_review', 'audit_assigned', 'certificate_generated', 'completed'];
+
                 const workflowApps = res.data
-                    .filter(app => ['approved', 'under_review', 'audit_assigned', 'certificate_generated', 'completed'].includes(app.status))
+                    .filter(app => {
+                        // If user specifically filtered by a status, we don't need to check workflow range 
+                        // because they asked for it. But usually we want to exclude "submitted" and "rejected" 
+                        // unless they specifically asked for them via dropdown.
+                        if (filterStatus) return true;
+                        return workflowStatuses.includes(app.status);
+                    })
                     .map(app => {
                         let progress = 25;
                         if (app.status === 'audit_assigned') progress = 50;
@@ -144,12 +163,7 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
         }
     };
 
-    const filteredApplications = applications.filter(app => {
-        const matchesSearch = app.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            app.id.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterService === 'All Services' ? true : app.service.toLowerCase() === filterService.split(' ')[0].toLowerCase(); // E.g. "ISO Certification" -> "ISO"
-        return matchesSearch && matchesType;
-    });
+    const filteredApplications = applications;
 
     return (
         <div className="space-y-6">
@@ -174,10 +188,22 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
                         onChange={(e) => setFilterService(e.target.value)}
                         className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
                     >
-                        <option>All Services</option>
-                        <option>ISO Certification</option>
-                        <option>Audit</option>
-                        <option>HRAA</option>
+                        <option value="">All Services</option>
+                        <option value="iso">ISO Certification</option>
+                        <option value="audit">Audit / Inspection</option>
+                        <option value="hraa">HRAA</option>
+                    </select>
+                    <select
+                        value={filterStatus}
+                        onChange={(e) => setFilterStatus(e.target.value)}
+                        className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+                    >
+                        <option value="">All Workflow Status</option>
+                        <option value="approved">Approved</option>
+                        <option value="under_review">Under Review</option>
+                        <option value="audit_assigned">Audit Assigned</option>
+                        <option value="certificate_generated">Cert Generated</option>
+                        <option value="completed">Completed</option>
                     </select>
                 </div>
             </div>

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ArrowRight, CheckCircle2, UploadCloud, FileText, ChevronRight, Shield, ScrollText, Users, Loader2 } from 'lucide-react';
 import { Navbar, Footer } from '../components/layout';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { applicationApi } from '../services';
+import { applicationApi, settingsApi, paymentApi } from '../services';
 
 const SERVICES = [
     {
@@ -40,6 +40,16 @@ const AUDIT_CATEGORIES = [
     'Process Audit', 'Pre-shipment Inspection', 'In-process Inspection',
     'Final Inspection', 'Quality Inspection', 'Site Inspection'
 ];
+
+const loadRazorpay = () => {
+    return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+    });
+};
 
 const Application = () => {
     const [selectedService, setSelectedService] = useState(null);
@@ -96,15 +106,43 @@ const Application = () => {
     });
 
     const [errors, setErrors] = useState({});
+    const [platformSettings, setPlatformSettings] = useState(null);
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const res = await settingsApi.get();
+                if (res.success) setPlatformSettings(res.data);
+            } catch (err) {
+                console.error("Error fetching settings:", err);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     // Dynamic fee calculation
     const calculateFee = () => {
+        if (!platformSettings) return 0;
+        const { pricing } = platformSettings;
+
         if (selectedService === 'iso') {
-            return formData.isoStandards.length > 1 ? 8999 : 4999;
+            if (formData.isoStandards.length === 0) return 0;
+            // Sum of individual standard prices or base price
+            let total = 0;
+            formData.isoStandards.forEach(std => {
+                total += pricing.isoDetails?.[std] || pricing.iso;
+            });
+            return total;
         } else if (selectedService === 'audit') {
-            return formData.auditServiceType === 'Inspection' ? 5499 : 6999;
+            if (formData.auditCategories.length === 0) return 0;
+            let total = 0;
+            formData.auditCategories.forEach(cat => {
+                total += pricing.auditDetails?.[cat] || pricing.audit;
+            });
+            return total;
         } else if (selectedService === 'hraa') {
-            return 7499;
+            if (!formData.hraaType) return 0;
+            return pricing.hraaDetails?.[formData.hraaType] || pricing.hraa;
         }
         return 0;
     };
@@ -256,55 +294,134 @@ const Application = () => {
         if (validateStep()) {
             setIsSubmitting(true);
             try {
-                const data = new FormData();
-
-                // Append all text fields
-                Object.keys(formData).forEach(key => {
-                    if (key !== 'docs' && key !== 'isoStandards' && key !== 'auditCategories') {
-                        data.append(key, formData[key]);
-                    }
-                });
-
-                // Append special fields
-                data.append('serviceType', selectedService);
-                data.append('isoStandards', JSON.stringify(formData.isoStandards));
-                data.append('auditCategories', JSON.stringify(formData.auditCategories));
-
-                // Unified contact person field for backend model compatibility
-                data.append('contactPerson', formData.contactName);
-                data.append('phone', formData.mobile);
-                data.append('serviceFee', calculateFee().toString());
-                data.append('paymentStatus', 'Completed'); // Set to completed since it's a mock payment flow
-
-                // Append files
-                Object.keys(formData.docs).forEach(key => {
-                    if (formData.docs[key]) {
-                        data.append(key, formData.docs[key]);
-                    }
-                });
-
-                const response = await applicationApi.submit(data);
-
-                if (response.success) {
-                    alert(`Application Submitted Successfully! Your Application ID is: ${response.data.applicationId}`);
-                    // Reset or Redirect logic here
-                    setSelectedService(null);
-                    setCurrentStep(1);
-                    setFormData({
-                        companyName: '', businessType: '', industryType: '', companyAddress: '', city: '', state: '', country: 'India', pinCode: '', gstNumber: '', companyWebsite: '',
-                        contactName: '', designation: '', email: '', mobile: '', alternateMobile: '',
-                        isoStandards: [], numEmployees: '', scopeOfBusiness: '', certificationDuration: '', existingIso: '',
-                        auditServiceType: '', auditCategories: [], siteLocation: '', numLocations: '', preferredMode: '', tentativeDate: '',
-                        hraaType: '', hraaEmployees: '', payrollManaged: '', hrPolicies: '', labourLawCompliance: '',
-                        docs: {}, paymentMethod: '', termsAgreed: false,
-                    });
+                const totalAmount = calculateFee();
+                
+                // 1. Load Razorpay Script
+                const res = await loadRazorpay();
+                if (!res) {
+                    alert('Razorpay SDK failed to load. Are you online?');
+                    setIsSubmitting(false);
+                    return;
                 }
+
+                // 2. Create Order on Backend
+                const orderRes = await paymentApi.createOrder({
+                    amount: totalAmount,
+                    currency: 'INR',
+                    receipt: `receipt_${Date.now()}`
+                });
+
+                if (!orderRes.success) {
+                    throw new Error(orderRes.message || 'Failed to create payment order');
+                }
+
+                // 3. Open Razorpay Checkout
+                const options = {
+                    key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+                    amount: orderRes.order.amount,
+                    currency: orderRes.order.currency,
+                    name: 'TechVimal International',
+                    description: `${selectedService.toUpperCase()} Certification Payment`,
+                    order_id: orderRes.order.id,
+                    handler: async (response) => {
+                        try {
+                            // 4. Verify Payment
+                            const verifyRes = await paymentApi.verify({
+                                ...response,
+                                applicationId: 'TEMP_ID_' + Date.now(), // Will be updated by backend
+                                amount: totalAmount,
+                                paymentMethod: formData.paymentMethod
+                            });
+
+                            if (verifyRes.success) {
+                                // 5. Submit Final Application
+                                await submitApplication(response.razorpay_payment_id, orderRes.order.id);
+                            } else {
+                                alert('Payment verification failed. Please contact support.');
+                            }
+                        } catch (err) {
+                            console.error('Verification error:', err);
+                            alert('Payment verification error. Please contact support.');
+                        }
+                    },
+                    prefill: {
+                        name: formData.contactName,
+                        email: formData.email,
+                        contact: formData.mobile
+                    },
+                    theme: {
+                        color: '#1e3a8a'
+                    },
+                    modal: {
+                        ondismiss: () => {
+                            setIsSubmitting(false);
+                        }
+                    }
+                };
+
+                const paymentObject = new window.Razorpay(options);
+                paymentObject.open();
+
             } catch (err) {
-                console.error("Submission Error:", err);
-                alert(err.message || "Failed to submit application. Please try again.");
-            } finally {
+                console.error("Payment Error:", err);
+                alert(err.message || "Failed to process payment. Please try again.");
                 setIsSubmitting(false);
             }
+        }
+    };
+
+    const submitApplication = async (paymentId, orderId) => {
+        try {
+            const data = new FormData();
+
+            // Append all text fields
+            Object.keys(formData).forEach(key => {
+                if (key !== 'docs' && key !== 'isoStandards' && key !== 'auditCategories') {
+                    data.append(key, formData[key]);
+                }
+            });
+
+            // Append special fields
+            data.append('serviceType', selectedService);
+            data.append('isoStandards', JSON.stringify(formData.isoStandards));
+            data.append('auditCategories', JSON.stringify(formData.auditCategories));
+
+            // Unified contact person field for backend model compatibility
+            data.append('contactPerson', formData.contactName);
+            data.append('phone', formData.mobile);
+            data.append('serviceFee', calculateFee().toString());
+            data.append('paymentStatus', 'Completed');
+            data.append('paymentId', paymentId);
+            data.append('transactionId', orderId);
+
+            // Append files
+            Object.keys(formData.docs).forEach(key => {
+                if (formData.docs[key]) {
+                    data.append(key, formData.docs[key]);
+                }
+            });
+
+            const response = await applicationApi.submit(data);
+
+            if (response.success) {
+                alert(`Application Submitted Successfully! Your Application ID is: ${response.data.applicationId}`);
+                // Reset or Redirect logic here
+                setSelectedService(null);
+                setCurrentStep(1);
+                setFormData({
+                    companyName: '', businessType: '', industryType: '', companyAddress: '', city: '', state: '', country: 'India', pinCode: '', gstNumber: '', companyWebsite: '',
+                    contactName: '', designation: '', email: '', mobile: '', alternateMobile: '',
+                    isoStandards: [], numEmployees: '', scopeOfBusiness: '', certificationDuration: '', existingIso: '',
+                    auditServiceType: '', auditCategories: [], siteLocation: '', numLocations: '', preferredMode: '', tentativeDate: '',
+                    hraaType: '', hraaEmployees: '', payrollManaged: '', hrPolicies: '', labourLawCompliance: '',
+                    docs: {}, paymentMethod: '', termsAgreed: false,
+                });
+            }
+        } catch (err) {
+            console.error("Submission Error:", err);
+            alert(err.message || "Failed to submit application. Application will be processed manually.");
+        } finally {
+            setIsSubmitting(false);
         }
     };
 

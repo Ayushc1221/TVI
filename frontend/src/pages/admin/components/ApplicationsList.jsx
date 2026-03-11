@@ -21,6 +21,7 @@ const ApplicationsList = ({ onViewDetails }) => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
     const [filters, setFilters] = useState({ serviceType: '', status: '' });
 
     const fetchApplications = async () => {
@@ -30,6 +31,7 @@ const ApplicationsList = ({ onViewDetails }) => {
             const params = { page, limit: 20 };
             if (filters.serviceType) params.serviceType = filters.serviceType;
             if (filters.status) params.status = filters.status;
+            if (searchTerm) params.search = searchTerm;
 
             const response = await applicationApi.getAll(params);
             if (response.success) {
@@ -46,9 +48,13 @@ const ApplicationsList = ({ onViewDetails }) => {
     };
 
     useEffect(() => {
-        fetchApplications();
+        const delayDebounceFn = setTimeout(() => {
+            fetchApplications();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page, filters]);
+    }, [page, filters, searchTerm]);
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -77,6 +83,8 @@ const ApplicationsList = ({ onViewDetails }) => {
                     <input
                         type="text"
                         placeholder="Search by Company or ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm"
                     />
                 </div>
@@ -86,17 +94,17 @@ const ApplicationsList = ({ onViewDetails }) => {
                     </div>
                     <select
                         value={filters.serviceType}
-                        onChange={(e) => setFilters(f => ({ ...f, serviceType: e.target.value }))}
+                        onChange={(e) => { setFilters(f => ({ ...f, serviceType: e.target.value })); setPage(1); }}
                         className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
                     >
                         <option value="">All Services</option>
-                        <option value="ISO">ISO Certification</option>
-                        <option value="AUDIT">Audit / Inspection</option>
-                        <option value="HRAA">HRAA</option>
+                        <option value="iso">ISO Certification</option>
+                        <option value="audit">Audit / Inspection</option>
+                        <option value="hraa">HRAA</option>
                     </select>
                     <select
                         value={filters.status}
-                        onChange={(e) => setFilters(f => ({ ...f, status: e.target.value }))}
+                        onChange={(e) => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1); }}
                         className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
                     >
                         <option value="">All Status</option>

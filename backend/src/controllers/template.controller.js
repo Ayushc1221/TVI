@@ -5,26 +5,32 @@ const CertificateTemplate = require('../models/CertificateTemplate.model');
 // @access  Private (Admin only)
 exports.uploadTemplate = async (req, res) => {
     try {
-        const { serviceType, templateName, fileUrl } = req.body;
+        const { serviceType } = req.body;
+        const file = req.file;
 
-        if (!serviceType || !templateName || !fileUrl) {
+        if (!serviceType || !file) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide serviceType, templateName, and fileUrl'
+                message: 'Please provide serviceType and upload a template file'
             });
         }
 
-        if (!['ISO', 'Audit', 'HRAA'].includes(serviceType)) {
+        // Standardize serviceType to uppercase for matching
+        const normalizedServiceType = serviceType.toUpperCase();
+
+        if (!['ISO', 'AUDIT', 'HRAA'].includes(normalizedServiceType)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid service type'
             });
         }
 
+        const fileUrl = `/uploads/${file.filename}`;
+
         const template = await CertificateTemplate.findOneAndUpdate(
-            { serviceType },
+            { serviceType: normalizedServiceType },
             {
-                templateName,
+                templateName: file.originalname,
                 fileUrl,
                 uploadedBy: req.admin ? req.admin._id : null
             },
@@ -33,7 +39,7 @@ exports.uploadTemplate = async (req, res) => {
 
         res.status(200).json({
             success: true,
-            message: `Template for ${serviceType} updated successfully`,
+            message: `Template for ${normalizedServiceType} updated successfully`,
             data: template
         });
 

@@ -52,6 +52,9 @@ export const API_ENDPOINTS = {
 
     // Health
     HEALTH: '/health',
+
+    // Settings
+    SETTINGS: '/settings',
 };
 
 export default {

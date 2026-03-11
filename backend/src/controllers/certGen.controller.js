@@ -86,15 +86,26 @@ exports.generateCertificate = async (req, res, next) => {
         // 3. Load certificate template (fallback to default)
         let templateHtml = defaultTemplate;
         try {
-            const Template = require('../models/Template.model');
-            const template = await Template.findOne({ serviceType });
-            if (template && template.templateUrl) {
-                const templatePath = path.join(__dirname, '..', '..', template.templateUrl);
+            const CertificateTemplate = require('../models/CertificateTemplate.model');
+            const template = await CertificateTemplate.findOne({ serviceType: serviceType.toUpperCase() });
+
+            if (template && template.fileUrl) {
+                const templatePath = path.join(__dirname, '..', '..', template.fileUrl);
                 if (fs.existsSync(templatePath)) {
-                    templateHtml = fs.readFileSync(templatePath, 'utf8');
+                    // Check if it's an HTML file
+                    if (templatePath.endsWith('.html')) {
+                        templateHtml = fs.readFileSync(templatePath, 'utf8');
+                    } else {
+                        // If it's an image/logo background (handled differently in templateHtml)
+                        // For now we assume they upload HTML templates as requested.
+                        // If it's a PDF/Image, we would need a different logic to layer.
+                        // But let's stick to the HTML requirement.
+                        templateHtml = fs.readFileSync(templatePath, 'utf8');
+                    }
                 }
             }
         } catch (e) {
+            console.error('Error loading template:', e);
             // Use default template
         }
 

@@ -1,29 +1,34 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, FileText, Download, FileBadge, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Search, Filter, FileText, Download, FileBadge, Image as ImageIcon, Loader2, Building2 } from 'lucide-react';
 import { applicationApi } from '../../../services';
+import { API_BASE_URL } from '../../../config/api.config';
 
 const DocumentsModule = () => {
     const [documents, setDocuments] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterType, setFilterType] = useState('');
+    const [filterService, setFilterService] = useState('');
 
     useEffect(() => {
         const fetchDocuments = async () => {
             setLoading(true);
             try {
-                // Fetch all applications
-                const response = await applicationApi.getAll({ limit: 1000 }); // Get max possible for now to build docs list
+                const params = { limit: 100 };
+                if (searchTerm) params.search = searchTerm;
+                if (filterService) params.serviceType = filterService;
+
+                const response = await applicationApi.getAll(params);
                 if (response.success && response.data) {
                     const allDocs = [];
                     response.data.forEach(app => {
-                        // Assuming app.documents is an array of strings or objects. Needs fallback if empty.
                         if (app.documents && app.documents.length > 0) {
                             app.documents.forEach((doc, index) => {
                                 allDocs.push({
                                     id: `DOC-${app.applicationId}-${index}`,
                                     appId: app.applicationId,
+                                    company: app.companyName,
+                                    service: app.serviceType,
                                     type: typeof doc === 'string' ? 'Upload' : (doc.type || 'Upload'),
                                     name: typeof doc === 'string' ? doc : (doc.name || `Document ${index + 1}`),
                                     url: typeof doc === 'string' ? doc : doc.url,
@@ -42,15 +47,14 @@ const DocumentsModule = () => {
             }
         };
 
-        fetchDocuments();
-    }, []);
+        const delayDebounceFn = setTimeout(() => {
+            fetchDocuments();
+        }, 500);
 
-    const filteredDocuments = documents.filter(doc => {
-        const matchesSearch = doc.appId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            doc.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesType = filterType ? doc.type === filterType : true;
-        return matchesSearch && matchesType;
-    });
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, filterService]);
+
+    const filteredDocuments = documents;
 
     // Unique types for filter
     const uniqueTypes = [...new Set(documents.map(d => d.type))];
@@ -74,14 +78,14 @@ const DocumentsModule = () => {
                         <Filter className="w-4 h-4" /> FILTERS
                     </div>
                     <select
-                        value={filterType}
-                        onChange={(e) => setFilterType(e.target.value)}
+                        value={filterService}
+                        onChange={(e) => setFilterService(e.target.value)}
                         className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
                     >
-                        <option value="">All Types</option>
-                        {uniqueTypes.map(type => (
-                            <option key={type} value={type}>{type}</option>
-                        ))}
+                        <option value="">All Services</option>
+                        <option value="iso">ISO Certification</option>
+                        <option value="audit">Audit / Inspection</option>
+                        <option value="hraa">HRAA</option>
                     </select>
                 </div>
             </div>
@@ -103,7 +107,7 @@ const DocumentsModule = () => {
                             <thead>
                                 <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider border-b border-slate-200 font-semibold">
                                     <th className="px-6 py-4 whitespace-nowrap">Application ID</th>
-                                    <th className="px-6 py-4 whitespace-nowrap">Document Type</th>
+                                    <th className="px-6 py-4 whitespace-nowrap">Company</th>
                                     <th className="px-6 py-4 whitespace-nowrap">Document Name</th>
                                     <th className="px-6 py-4 text-center whitespace-nowrap">Action</th>
                                 </tr>
@@ -114,21 +118,27 @@ const DocumentsModule = () => {
                                     return (
                                         <tr key={doc.id} className="hover:bg-slate-50 transition-colors group">
                                             <td className="px-6 py-4 text-sm font-semibold text-blue-600 whitespace-nowrap">{doc.appId}</td>
-                                            <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">
-                                                <span className="px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-lg">{doc.type}</span>
+                                            <td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="w-3.5 h-3.5 text-slate-400" />
+                                                    {doc.company}
+                                                </div>
                                             </td>
                                             <td className="px-6 py-4 text-sm font-medium text-slate-800 whitespace-nowrap">
                                                 <div className="flex items-center gap-3">
                                                     <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
                                                         <Icon className="w-4 h-4" />
                                                     </div>
-                                                    {doc.name}
+                                                    <div>
+                                                        <p className="font-semibold">{doc.name}</p>
+                                                        <p className="text-[10px] text-slate-400 uppercase tracking-wider">{doc.type}</p>
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td className="px-6 py-4 text-center whitespace-nowrap">
                                                 {doc.url ? (
                                                     <a
-                                                        href={doc.url.startsWith('http') ? doc.url : `http://localhost:5000${doc.url}`}
+                                                        href={doc.url.startsWith('http') ? doc.url : `${API_BASE_URL.replace('/api', '')}${doc.url}`}
                                                         target="_blank"
                                                         rel="noreferrer"
                                                         className="inline-flex items-center justify-center px-3 py-1.5 border border-slate-200 text-sm font-medium rounded-lg text-slate-600 bg-white hover:bg-slate-50 hover:border-slate-300 hover:text-blue-600 transition-colors shadow-sm"

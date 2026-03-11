@@ -1,12 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { getPayments, createPayment } = require('../controllers/payment.controller');
+const { 
+    getPayments, 
+    createPayment, 
+    createOrder, 
+    verifyPayment 
+} = require('../controllers/payment.controller');
 const { authenticate } = require('../middleware');
 
-// GET /api/payments
-router.get('/', authenticate, getPayments);
+// Public routes for payment processing
+router.post('/create-order', createOrder);
+router.post('/verify', verifyPayment);
 
-// POST /api/payments
+// Private routes for admin management
+router.get('/', authenticate, getPayments);
 router.post('/', authenticate, createPayment);
 
 module.exports = router;

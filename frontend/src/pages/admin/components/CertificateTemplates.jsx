@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, FileText, Eye, Upload, FileBadge, Loader2 } from 'lucide-react';
 import { templateApi } from '../../../services';
+import { API_BASE_URL } from '../../../config/api.config';
 
 const CertificateTemplates = ({ onBack }) => {
     const [templates, setTemplates] = useState([]);
@@ -31,31 +32,25 @@ const CertificateTemplates = ({ onBack }) => {
     const handleUpload = (serviceType) => {
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
-        fileInput.accept = '.pdf,.html';
+        fileInput.accept = '.html';
         fileInput.onchange = async (e) => {
             const file = e.target.files[0];
             if (file) {
                 setUploading(serviceType);
                 try {
-                    // Simulating file upload URL generation
-                    const fileUrl = `/uploads/templates/${file.name.replace(/\s+/g, '_')}`;
+                    const formData = new FormData();
+                    formData.append('template', file);
+                    formData.append('serviceType', serviceType);
 
-                    const res = await templateApi.upload({
-                        serviceType,
-                        templateName: file.name,
-                        fileUrl
-                    });
+                    const res = await templateApi.upload(formData);
 
                     if (res.success) {
                         alert(`Template for ${serviceType} successfully updated!`);
-                        setTemplates(prev => {
-                            const newArr = prev.filter(t => t.serviceType !== serviceType);
-                            return [...newArr, res.data];
-                        });
+                        fetchTemplates(); // Refresh templates list
                     }
                 } catch (error) {
                     console.error('Failed to upload template', error);
-                    alert(`Failed to upload template: ${error.message || 'Server error'}`);
+                    alert(`Failed to upload template: ${error.response?.data?.message || error.message}`);
                 } finally {
                     setUploading(null);
                 }
@@ -136,7 +131,7 @@ const CertificateTemplates = ({ onBack }) => {
 
                                     <div className="flex items-center justify-between gap-2 mt-4 pt-4 border-t border-slate-100">
                                         <button
-                                            onClick={() => window.open(activeTemplate?.fileUrl, '_blank')}
+                                            onClick={() => window.open(activeTemplate?.fileUrl?.startsWith('http') ? activeTemplate.fileUrl : `${API_BASE_URL.replace('/api', '')}${activeTemplate.fileUrl}`, '_blank')}
                                             disabled={!activeTemplate}
                                             className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-colors w-full ${!activeTemplate ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-slate-50 hover:bg-blue-50 text-slate-600 hover:text-blue-600 border border-slate-200'}`}
                                             title="Preview Template"

@@ -19,12 +19,18 @@ const Payments = ({ onViewApplication }) => {
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [total, setTotal] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState({ serviceType: '', status: '' });
 
     const fetchPayments = async () => {
         setLoading(true);
         setError('');
         try {
-            const response = await paymentApi.getAll({ page, limit: 20 });
+            const params = { page, limit: 20 };
+            if (filters.status) params.paymentStatus = filters.status;
+            if (searchTerm) params.search = searchTerm;
+
+            const response = await paymentApi.getAll(params);
             if (response.success) {
                 setPaymentsList(response.data);
                 setTotalPages(response.pages || 1);
@@ -39,9 +45,13 @@ const Payments = ({ onViewApplication }) => {
     };
 
     useEffect(() => {
-        fetchPayments();
+        const delayDebounceFn = setTimeout(() => {
+            fetchPayments();
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [page]);
+    }, [page, filters, searchTerm]);
 
     const getPaymentBadge = (status) => {
         switch (status) {
@@ -67,6 +77,8 @@ const Payments = ({ onViewApplication }) => {
                     <input
                         type="text"
                         placeholder="Search by Payment ID or App ID..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all shadow-sm"
                     />
                 </div>
@@ -74,23 +86,28 @@ const Payments = ({ onViewApplication }) => {
                     <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm mr-2 hidden sm:flex">
                         <Filter className="w-4 h-4" /> FILTERS
                     </div>
-                    <select className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none">
-                        <option>All Services</option>
-                        <option>ISO Certification</option>
-                        <option>Audit / Inspection</option>
-                        <option>HRAA</option>
+                    {/* Note: Service filter is tricky here as serviceType is on Application, not Payment. 
+                        For now keeping UI but filtering by service requires a join on backend. */}
+                    <select
+                        value={filters.serviceType}
+                        onChange={(e) => { setFilters(f => ({ ...f, serviceType: e.target.value })); setPage(1); }}
+                        className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+                    >
+                        <option value="">All Services</option>
+                        <option value="iso">ISO Certification</option>
+                        <option value="audit">Audit / Inspection</option>
+                        <option value="hraa">HRAA</option>
                     </select>
-                    <select className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none">
-                        <option>All Status</option>
-                        <option>Paid</option>
-                        <option>Pending</option>
-                        <option>Failed</option>
+                    <select
+                        value={filters.status}
+                        onChange={(e) => { setFilters(f => ({ ...f, status: e.target.value })); setPage(1); }}
+                        className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+                    >
+                        <option value="">All Status</option>
+                        <option value="completed">Paid</option>
+                        <option value="pending">Pending</option>
+                        <option value="failed">Failed</option>
                     </select>
-                    <div className="flex items-center gap-2 px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium shadow-sm cursor-pointer hover:bg-slate-50">
-                        <Calendar className="w-4 h-4 text-slate-500" />
-                        <span>Date Range</span>
-                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                    </div>
                 </div>
             </div>
 

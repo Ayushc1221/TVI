@@ -7,18 +7,21 @@ const UsersModule = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [filterService, setFilterService] = useState('');
 
     useEffect(() => {
         const fetchClients = async () => {
             setLoading(true);
             try {
-                // Fetch all applications to extract unique clients
-                const response = await applicationApi.getAll({ limit: 1000 });
+                const params = { limit: 100 };
+                if (searchTerm) params.search = searchTerm;
+                if (filterService) params.serviceType = filterService;
+
+                const response = await applicationApi.getAll(params);
                 if (response.success && response.data) {
                     const clientMap = new Map();
 
                     response.data.forEach(app => {
-                        // Use email or company name as unique identifier
                         const key = app.email || app.companyName;
                         if (!key) return;
 
@@ -29,10 +32,10 @@ const UsersModule = () => {
                         } else {
                             clientMap.set(key, {
                                 id: `CLI-${app.applicationId}`,
-                                name: app.contactPerson || 'N/A',
+                                name: app.contactPerson || app.contactName || 'N/A',
                                 company: app.companyName,
                                 email: app.email,
-                                mobile: app.phone || 'N/A',
+                                mobile: app.phone || app.mobile || 'N/A',
                                 totalApps: 1,
                                 appId: app.applicationId
                             });
@@ -49,14 +52,14 @@ const UsersModule = () => {
             }
         };
 
-        fetchClients();
-    }, []);
+        const delayDebounceFn = setTimeout(() => {
+            fetchClients();
+        }, 500);
 
-    const filteredClients = clients.filter(client =>
-        client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        client.company.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, filterService]);
+
+    const filteredClients = clients;
 
     return (
         <div className="space-y-6">
@@ -76,9 +79,15 @@ const UsersModule = () => {
                     <div className="flex items-center gap-2 text-slate-700 font-semibold text-sm mr-2 hidden sm:flex">
                         <Filter className="w-4 h-4" /> FILTERS
                     </div>
-                    <select className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none">
-                        <option>All Clients</option>
-                        <option>Active (1+ Apps)</option>
+                    <select
+                        value={filterService}
+                        onChange={(e) => setFilterService(e.target.value)}
+                        className="px-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm cursor-pointer flex-1 sm:flex-none"
+                    >
+                        <option value="">All Services</option>
+                        <option value="iso">ISO Certification</option>
+                        <option value="audit">Audit / Inspection</option>
+                        <option value="hraa">HRAA</option>
                     </select>
                 </div>
             </div>

@@ -65,11 +65,20 @@ exports.createApplication = async (req, res, next) => {
 // @access  Private
 exports.getApplications = async (req, res, next) => {
     try {
-        const { status, serviceType, page = 1, limit = 20 } = req.query;
+        const { status, serviceType, search, page = 1, limit = 20 } = req.query;
 
         const filter = {};
         if (status) filter.status = status;
         if (serviceType) filter.serviceType = serviceType;
+        if (search) {
+            filter.$or = [
+                { applicationId: { $regex: search, $options: 'i' } },
+                { companyName: { $regex: search, $options: 'i' } },
+                { contactPerson: { $regex: search, $options: 'i' } },
+                { contactName: { $regex: search, $options: 'i' } },
+                { email: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         const applications = await Application.find(filter)
             .sort({ createdAt: -1 })

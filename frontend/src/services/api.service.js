@@ -179,13 +179,22 @@ export const certificateApi = {
 export const paymentApi = {
     getAll: (params) => apiService.get(API_ENDPOINTS.PAYMENTS, params),
     create: (data) => apiService.post(API_ENDPOINTS.PAYMENTS, data),
+    createOrder: (data) => apiService.post(`${API_ENDPOINTS.PAYMENTS}/create-order`, data),
+    verify: (data) => apiService.post(`${API_ENDPOINTS.PAYMENTS}/verify`, data),
 };
 
 // Template API
 export const templateApi = {
     getAll: () => apiService.get(API_ENDPOINTS.TEMPLATES),
-    upload: (data) => apiService.post(API_ENDPOINTS.TEMPLATES, data),
+    upload: (data) => data instanceof FormData
+        ? apiService.postFormData(API_ENDPOINTS.TEMPLATES, data)
+        : apiService.post(API_ENDPOINTS.TEMPLATES, data),
+};
+
+// Settings API
+export const settingsApi = {
+    get: () => apiService.get(API_ENDPOINTS.SETTINGS),
+    update: (data) => apiService.put(API_ENDPOINTS.SETTINGS, data),
 };
 
 export default apiService;
-
