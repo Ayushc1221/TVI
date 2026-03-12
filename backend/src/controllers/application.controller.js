@@ -7,10 +7,24 @@ exports.createApplication = async (req, res, next) => {
     try {
         const formData = req.body;
 
-        // Generate Application ID (APP-YYYY-XXX)
+        // Generate Application ID (APP-YYYY-XXXX)
         const year = new Date().getFullYear();
-        const count = await Application.countDocuments({ applicationId: new RegExp(`APP-${year}`) });
-        const newIdNumber = (count + 1).toString().padStart(3, '0');
+
+        // Find the latest application for this year to get the next sequence number
+        const lastApp = await Application.findOne({
+            applicationId: new RegExp(`^APP-${year}-`)
+        }).sort({ applicationId: -1 });
+
+        let nextNumber = 1;
+        if (lastApp) {
+            const lastIdParts = lastApp.applicationId.split('-');
+            const lastSeq = parseInt(lastIdParts[lastIdParts.length - 1]);
+            if (!isNaN(lastSeq)) {
+                nextNumber = lastSeq + 1;
+            }
+        }
+
+        const newIdNumber = nextNumber.toString().padStart(4, '0');
         const applicationId = `APP-${year}-${newIdNumber}`;
 
         // Handle uploaded files

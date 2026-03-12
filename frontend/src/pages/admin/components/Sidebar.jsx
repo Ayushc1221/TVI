@@ -10,8 +10,12 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, menuIte
             <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800 shrink-0">
                 {sidebarOpen && (
                     <div className="flex items-center gap-3 overflow-hidden">
-                        <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shrink-0">
-                            <Award className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 border border-slate-700 bg-white/5 rounded-lg flex items-center justify-center shrink-0 overflow-hidden">
+                            <img
+                                src="/Tech_Vimal_International.webp"
+                                alt="TVI Logo"
+                                className="w-full h-full object-contain p-1"
+                            />
                         </div>
                         <span className="font-bold text-white whitespace-nowrap">TVI Admin</span>
                     </div>

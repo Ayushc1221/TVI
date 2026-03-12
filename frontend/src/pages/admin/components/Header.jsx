@@ -14,10 +14,10 @@ const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminU
             <div className="flex items-center gap-2 sm:gap-4">
 
                 {/* Notifications */}
-                <button className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                {/* <button className="relative p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
                     <Bell className="w-5 h-5" />
                     <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
-                </button>
+                </button> */}
 
                 <div className="h-8 w-px bg-slate-200 mx-2"></div>
 

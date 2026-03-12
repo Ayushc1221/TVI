@@ -12,11 +12,11 @@ import {
     Eye,
     Loader2
 } from 'lucide-react';
-import { applicationApi } from '../../../services';
+import { applicationApi, dashboardApi } from '../../../services';
 
 const DashboardHome = ({ onViewApplication, onViewAll }) => {
     const [recentApplications, setRecentApplications] = useState([]);
-    const [stats, setStats] = useState({ total: 0, submitted: 0, approved: 0, rejected: 0, inProgress: 0 });
+    const [stats, setStats] = useState({ total: 0, submitted: 0, approved: 0, rejected: 0, inProgress: 0, totalRevenue: 0 });
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ serviceType: '', status: '' });
 
@@ -24,24 +24,27 @@ const DashboardHome = ({ onViewApplication, onViewAll }) => {
         const fetchData = async () => {
             setLoading(true);
             try {
+                // Fetch Recent Applications for the table
                 const params = { page: 1, limit: 5 };
                 if (filters.serviceType) params.serviceType = filters.serviceType;
                 if (filters.status) params.status = filters.status;
 
-                const response = await applicationApi.getAll(params);
-                if (response.success) {
-                    setRecentApplications(response.data);
+                const appResponse = await applicationApi.getAll(params);
+                if (appResponse.success) {
+                    setRecentApplications(appResponse.data);
+                }
 
-                    // We only update stats if no filters are applied, or we can fetch stats separately
-                    // For now, let's keep stats as total counts (ignoring the 5 limit)
-                    if (!filters.serviceType && !filters.status) {
-                        setStats({
-                            total: response.total || response.data.length,
-                            submitted: response.data.filter(a => a.status === 'submitted').length,
-                            approved: response.data.filter(a => a.status === 'approved' || a.status === 'completed').length,
-                            rejected: response.data.filter(a => a.status === 'rejected').length,
-                            inProgress: response.data.filter(a => ['under_review', 'audit_assigned', 'certificate_generated'].includes(a.status)).length,
-                        });
+                // Fetch real stats ONLY if no filters are applied
+                // If filters are applied, the KPIs might not accurately reflect the filtered list
+                // but keep the main KPIs as overall business stats
+                if (!filters.serviceType && !filters.status) {
+                    const statsResponse = await dashboardApi.getStats();
+                    if (statsResponse.success) {
+                        setStats(statsResponse.data.stats);
+                        // Also update recent apps from stats if they are returned there
+                        if (statsResponse.data.recentApplications) {
+                            setRecentApplications(statsResponse.data.recentApplications);
+                        }
                     }
                 }
             } catch (err) {
@@ -126,7 +129,9 @@ const DashboardHome = ({ onViewApplication, onViewAll }) => {
                         <div className="p-2 bg-indigo-50 text-indigo-600 rounded-xl"><IndianRupee className="w-4 h-4" /></div>
                     </div>
                     <div>
-                        <h3 className="text-2xl font-bold text-slate-800">₹0</h3>
+                        <h3 className="text-2xl font-bold text-slate-800">
+                            ₹{loading ? '...' : (stats.totalRevenue || 0).toLocaleString('en-IN')}
+                        </h3>
                     </div>
                 </div>
             </div>

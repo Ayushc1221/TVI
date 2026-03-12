@@ -1,4 +1,6 @@
 const { Contact } = require('../models');
+const Application = require('../models/Application.model');
+const Payment = require('../models/Payment.model');
 
 /**
  * Get Dashboard Stats (Admin Only)
@@ -6,63 +8,62 @@ const { Contact } = require('../models');
  */
 const getDashboardStats = async (req, res) => {
     try {
-        // Get total counts by status
-        const [totalContacts, statusCounts, recentContacts] = await Promise.all([
-            Contact.countDocuments(),
-            Contact.aggregate([
-                {
-                    $group: {
-                        _id: '$status',
-                        count: { $sum: 1 },
-                    },
-                },
-            ]),
-            Contact.find()
-                .sort({ createdAt: -1 })
-                .limit(5)
-                .select('name email company status createdAt'),
+        // Get counts from Application collection
+        const [
+            totalApps,
+            submittedCount,
+            underReviewCount,
+            approvedCount,
+            auditAssignedCount,
+            certGeneratedCount,
+            completedCount,
+            rejectedCount
+        ] = await Promise.all([
+            Application.countDocuments(),
+            Application.countDocuments({ status: 'submitted' }),
+            Application.countDocuments({ status: 'under_review' }),
+            Application.countDocuments({ status: 'approved' }),
+            Application.countDocuments({ status: 'audit_assigned' }),
+            Application.countDocuments({ status: 'certificate_generated' }),
+            Application.countDocuments({ status: 'completed' }),
+            Application.countDocuments({ status: 'rejected' })
         ]);
 
-        // Format status counts
-        const statusMap = {
-            new: 0,
-            read: 0,
-            replied: 0,
-            archived: 0,
-        };
-        statusCounts.forEach((item) => {
-            statusMap[item._id] = item.count;
-        });
+        // Calculate Revenue from completed payments
+        const revenueResult = await Payment.aggregate([
+            {
+                $match: {
+                    paymentStatus: 'completed'
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalRevenue: { $sum: { $toDouble: "$amount" } }
+                }
+            }
+        ]);
 
-        // Get contacts from last 7 days
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+        const totalRevenue = revenueResult.length > 0 ? revenueResult[0].totalRevenue : 0;
 
-        const weeklyContacts = await Contact.countDocuments({
-            createdAt: { $gte: sevenDaysAgo },
-        });
-
-        // Get contacts from last 30 days
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const monthlyContacts = await Contact.countDocuments({
-            createdAt: { $gte: thirtyDaysAgo },
-        });
+        // Get recent applications
+        const recentApplications = await Application.find()
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .select('applicationId companyName serviceType status createdAt');
 
         res.status(200).json({
             success: true,
             data: {
                 stats: {
-                    totalContacts,
-                    newContacts: statusMap.new,
-                    readContacts: statusMap.read,
-                    repliedContacts: statusMap.replied,
-                    archivedContacts: statusMap.archived,
-                    weeklyContacts,
-                    monthlyContacts,
+                    total: totalApps,
+                    submitted: submittedCount,
+                    approved: approvedCount + completedCount + certGeneratedCount,
+                    rejected: rejectedCount,
+                    inProgress: underReviewCount + auditAssignedCount,
+                    totalRevenue
                 },
-                recentContacts,
+                recentApplications
             },
         });
     } catch (error) {
