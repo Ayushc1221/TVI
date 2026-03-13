@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { verifyCertificate } = require('../controllers/verification.controller');
+const { verifyCertificate } = require('../controllers/certificate.controller');
 
 // GET /api/verify/:certificateNumber  (Public)
 router.get('/:certificateNumber', verifyCertificate);

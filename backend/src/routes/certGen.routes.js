@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { generateCertificate, downloadCertificate } = require('../controllers/certGen.controller');
-const { verifyCertificate } = require('../controllers/verification.controller');
+const { verifyCertificate } = require('../controllers/certificate.controller');
 const { authenticate } = require('../middleware');
 
 // POST /api/certificates/generate

@@ -43,7 +43,26 @@ exports.verifyCertificate = async (req, res) => {
     try {
         const { certificateNumber } = req.params;
 
-        const certificate = await Certificate.findOne({ certificateNumber });
+        // Search by Certificate Number OR Application ID (Case-Insensitive)
+        // Also handle cases where user might omit leading zeros in the sequence (e.g. -1 vs -0001)
+        let searchRegex;
+        const certPatternMatch = certificateNumber.match(/^(TVI-[A-Z]+-\d{4}-)(\d+)$/i);
+        
+        if (certPatternMatch) {
+            const prefix = certPatternMatch[1];
+            const seq = parseInt(certPatternMatch[2], 10);
+            // Matches prefix followed by optional leading zeros + sequence
+            searchRegex = new RegExp(`^${prefix}0*${seq}$`, 'i');
+        } else {
+            searchRegex = new RegExp(`^${certificateNumber}$`, 'i');
+        }
+        
+        const certificate = await Certificate.findOne({
+            $or: [
+                { certificateNumber: searchRegex },
+                { applicationId: searchRegex }
+            ]
+        });
 
         if (!certificate) {
             return res.status(404).json({
