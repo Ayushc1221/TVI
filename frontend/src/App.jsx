@@ -4,7 +4,9 @@ import Home from "./pages/Home";
 import Application from "./pages/Application";
 import VerifyPage from "./pages/VerifyPage";
 import { AdminLogin, AdminDashboard } from "./pages/admin";
-import { ProtectedRoute } from "./components/auth";
+import { AuditorLogin, AuditorDashboard } from "./pages/auditor";
+import { ClientLogin, ClientDashboard } from "./pages/client";
+import { ProtectedRoute, AuditorProtectedRoute, ClientProtectedRoute } from "./components/auth";
 import { ScrollToTop } from "./components";
 
 function App() {
@@ -28,14 +30,50 @@ function App() {
               </ProtectedRoute>
             }
           />
-
-          {/* Redirect /admin to /admin/dashboard */}
           <Route
             path="/admin"
             element={
               <ProtectedRoute>
                 <AdminDashboard />
               </ProtectedRoute>
+            }
+          />
+
+          {/* Auditor Routes */}
+          <Route path="/auditor/login" element={<AuditorLogin />} />
+          <Route
+            path="/auditor/dashboard"
+            element={
+              <AuditorProtectedRoute>
+                <AuditorDashboard />
+              </AuditorProtectedRoute>
+            }
+          />
+          <Route
+            path="/auditor"
+            element={
+              <AuditorProtectedRoute>
+                <AuditorDashboard />
+              </AuditorProtectedRoute>
+            }
+          />
+
+          {/* Client Routes */}
+          <Route path="/client/login" element={<ClientLogin />} />
+          <Route
+            path="/client/dashboard"
+            element={
+              <ClientProtectedRoute>
+                <ClientDashboard />
+              </ClientProtectedRoute>
+            }
+          />
+          <Route
+            path="/client"
+            element={
+              <ClientProtectedRoute>
+                <ClientDashboard />
+              </ClientProtectedRoute>
             }
           />
         </Routes>

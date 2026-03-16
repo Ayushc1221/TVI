@@ -28,6 +28,7 @@ export const navbarConfig = {
         { href: '/#services', label: 'Services' },
         { href: '/#industries', label: 'Industries' },
         { href: '/#verification', label: 'Verify Certificate' },
+        { href: '/client/login', label: 'Track Application' },
         { href: '/#contact', label: 'Contact' },
     ],
 

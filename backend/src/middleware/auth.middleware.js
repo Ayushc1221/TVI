@@ -65,6 +65,58 @@ const authenticate = async (req, res, next) => {
 };
 
 /**
+ * Client Authentication Middleware
+ * Verifies JWT token and attaches client payload to request
+ */
+const authenticateClient = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({
+                success: false,
+                message: 'Access denied. No token provided.',
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+
+        // Verify token
+        const decoded = jwt.verify(token, config.jwt.secret);
+
+        // Check if role is client
+        if (decoded.role !== 'client') {
+            return res.status(403).json({
+                success: false,
+                message: 'Forbidden. Not a client token.',
+            });
+        }
+
+        // Attach client info to request
+        req.client = decoded;
+        next();
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid token.',
+            });
+        }
+        if (error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token expired. Please login again.',
+            });
+        }
+
+        return res.status(500).json({
+            success: false,
+            message: 'Authentication error.',
+        });
+    }
+};
+
+/**
  * Role-based Authorization Middleware
  * @param {...string} roles - Allowed roles
  */
@@ -82,5 +134,6 @@ const authorize = (...roles) => {
 
 module.exports = {
     authenticate,
+    authenticateClient,
     authorize,
 };

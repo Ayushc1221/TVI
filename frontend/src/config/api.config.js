@@ -55,6 +55,10 @@ export const API_ENDPOINTS = {
 
     // Settings
     SETTINGS: '/settings',
+
+    // Client
+    CLIENT_LOGIN: '/client/login',
+    CLIENT_APPLICATIONS: '/client/applications',
 };
 
 export default {

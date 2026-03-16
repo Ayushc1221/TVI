@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { Search, Bell, ChevronDown, Settings, LogOut } from 'lucide-react';
-const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminUser, handleLogout, setActiveTab }) => {
+const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminUser, handleLogout, setActiveTab, roleLabel }) => {
     return (
         <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-30 shadow-sm">
             {/* Header Left */}
@@ -32,7 +32,7 @@ const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminU
                         </div>
                         <div className="hidden md:block text-left">
                             <p className="font-semibold text-sm text-slate-700 leading-tight">{adminUser.name || 'Admin'}</p>
-                            <p className="text-xs text-slate-500 leading-tight border-none">Administrator</p>
+                            <p className="text-xs text-slate-500 leading-tight border-none">{roleLabel || 'Administrator'}</p>
                         </div>
                         <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
                     </button>

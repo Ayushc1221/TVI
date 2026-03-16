@@ -62,9 +62,21 @@ class ApiService {
 
             if (!response.ok) {
                 // Handle 401 - Unauthorized
-                if (response.status === 401) {
-                    this.removeToken();
-                    window.location.href = '/admin/login';
+                // Only redirect if it's NOT a login attempt
+                if (response.status === 401 && !endpoint.includes('/login')) {
+                    // Check which role to redirect based on current URL
+                    if (window.location.pathname.startsWith('/client')) {
+                        localStorage.removeItem('client_token');
+                        localStorage.removeItem('client_user');
+                        window.location.href = '/client/login';
+                    } else if (window.location.pathname.startsWith('/auditor')) {
+                        localStorage.removeItem('auditor_token');
+                        localStorage.removeItem('auditor_user');
+                        window.location.href = '/auditor/login';
+                    } else if (window.location.pathname.startsWith('/admin')) {
+                        this.removeToken();
+                        window.location.href = '/admin/login';
+                    }
                 }
                 throw new Error(data.message || 'Request failed');
             }
@@ -195,6 +207,18 @@ export const templateApi = {
 export const settingsApi = {
     get: () => apiService.get(API_ENDPOINTS.SETTINGS),
     update: (data) => apiService.put(API_ENDPOINTS.SETTINGS, data),
+};
+
+// Client API
+export const clientApi = {
+    login: (credentials) => apiService.post(API_ENDPOINTS.CLIENT_LOGIN, credentials),
+    getApplications: () => {
+        const token = localStorage.getItem('client_token');
+        return apiService.request(API_ENDPOINTS.CLIENT_APPLICATIONS, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    }
 };
 
 export default apiService;

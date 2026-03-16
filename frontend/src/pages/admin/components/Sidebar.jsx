@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { Menu, X, Award } from 'lucide-react';
-const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, menuItems }) => {
+const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, menuItems, title }) => {
     return (
         <aside
             className={`fixed top-0 left-0 z-40 h-screen bg-slate-900 transition-all duration-300 flex flex-col shadow-xl ${sidebarOpen ? 'w-64' : 'w-20'
@@ -17,7 +17,7 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen, activeTab, setActiveTab, menuIte
                                 className="w-full h-full object-contain p-1"
                             />
                         </div>
-                        <span className="font-bold text-white whitespace-nowrap">TVI Admin</span>
+                        <span className="font-bold text-white whitespace-nowrap">{title || 'TVI Admin'}</span>
                     </div>
                 )}
                 <button

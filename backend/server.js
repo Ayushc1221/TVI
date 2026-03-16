@@ -16,6 +16,7 @@ const certGenRoutes = require('./src/routes/certGen.routes');
 const paymentRoutes = require('./src/routes/payment.routes');
 const verificationRoutes = require('./src/routes/verification.routes');
 const settingRoutes = require('./src/routes/setting.routes');
+const clientRoutes = require('./src/routes/client.routes');
 const path = require('path');
 
 // Initialize Express App
@@ -96,6 +97,7 @@ app.use('/api/certificates', certGenRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/verify', verificationRoutes);
 app.use('/api/settings', settingRoutes);
+app.use('/api/client', clientRoutes);
 
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
