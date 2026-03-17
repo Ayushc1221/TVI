@@ -4,6 +4,7 @@ import { LayoutDashboard } from 'lucide-react';
 
 import Sidebar from '../admin/components/Sidebar';
 import Header from '../admin/components/Header';
+import AuditorAssignedList from './components/AuditorAssignedList';
 
 const AuditorDashboard = () => {
     const navigate = useNavigate();
@@ -22,21 +23,12 @@ const AuditorDashboard = () => {
 
     // Sidebar Menu Items for Auditor
     const menuItems = [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        // Temporarily simplified as requested
+        { id: 'dashboard', label: 'My Assignments', icon: LayoutDashboard },
     ];
 
     const renderContent = () => {
         if (activeTab === 'dashboard') {
-            return (
-                <div className="flex flex-col items-center justify-center p-12 text-slate-500 border-2 border-dashed border-slate-200 rounded-2xl bg-slate-50">
-                    <div className="w-16 h-16 bg-white shadow-sm rounded-full flex items-center justify-center mb-4">
-                        <LayoutDashboard className="w-8 h-8 text-slate-400" />
-                    </div>
-                    <h2 className="text-xl font-bold text-slate-700 capitalize mb-2">Auditor Dashboard</h2>
-                    <p className="text-slate-500 font-medium">Coming soon. Protected area verified.</p>
-                </div>
-            );
+            return <AuditorAssignedList />;
         }
 
         return null;

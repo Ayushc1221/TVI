@@ -4,6 +4,7 @@ const dashboardRoutes = require('./dashboard.routes');
 const templateRoutes = require('./template.routes');
 const certificateRoutes = require('./certificate.routes');
 const clientRoutes = require('./client.routes');
+const auditorRoutes = require('./auditor.routes');
 
 module.exports = {
     authRoutes,
@@ -12,4 +13,5 @@ module.exports = {
     templateRoutes,
     certificateRoutes,
     clientRoutes,
+    auditorRoutes,
 };

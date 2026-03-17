@@ -160,7 +160,13 @@ const DashboardHome = ({ onViewApplication, onViewAll }) => {
                         <option value="">All Status</option>
                         <option value="submitted">Submitted</option>
                         <option value="under_review">Under Review</option>
-                        <option value="approved">Approved</option>
+                        <option value="quotation_sent">Invoice Sent</option>
+                        <option value="mou_accepted">Agreement Accepted</option>
+                        <option value="audit_assigned">Audit Assigned</option>
+                        <option value="audit_report_submitted">Audit Report Submitted</option>
+                        <option value="review_approved">Review Approved</option>
+                        <option value="certificate_generated">Cert Generated</option>
+                        <option value="completed">Completed</option>
                         <option value="rejected">Rejected</option>
                     </select>
                 </div>

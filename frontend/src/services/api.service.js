@@ -46,10 +46,12 @@ class ApiService {
             headers['Content-Type'] = 'application/json';
         }
 
-        // Add auth token if available
-        const token = this.getToken();
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
+        // Only add default admin token if an Authorization header wasn't explicitly provided
+        if (!headers['Authorization']) {
+            const token = this.getToken();
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
         }
 
         try {
@@ -178,11 +180,16 @@ export const applicationApi = {
     submit: (formData) => apiService.postFormData(API_ENDPOINTS.APPLICATIONS, formData),
     assignAuditor: (data) => apiService.put(API_ENDPOINTS.APPLICATION_ASSIGN_AUDITOR, data),
     updateStatus: (data) => apiService.put(API_ENDPOINTS.APPLICATION_STATUS, data),
+    uploadMOU: (id, formData) => apiService.postFormData(API_ENDPOINTS.APPLICATION_UPLOAD_MOU(id), formData),
+    techReview: (id, data) => apiService.post(API_ENDPOINTS.APPLICATION_TECH_REVIEW(id), data),
+    verifyDocument: (id, docId) => apiService.put(`/applications/${id}/documents/${docId}/verify`),
 };
 
 // Certificate API
 export const certificateApi = {
-    generate: (data) => apiService.post(API_ENDPOINTS.CERTIFICATE_GENERATE, data),
+    generate: (data) => data instanceof FormData 
+        ? apiService.postFormData(API_ENDPOINTS.CERTIFICATE_GENERATE, data)
+        : apiService.post(API_ENDPOINTS.CERTIFICATE_GENERATE, data),
     download: (id) => `${apiService.baseURL}${API_ENDPOINTS.CERTIFICATE_DOWNLOAD(id)}`,
     verify: (certNumber) => apiService.get(API_ENDPOINTS.CERTIFICATE_VERIFY(certNumber)),
 };
@@ -216,6 +223,33 @@ export const clientApi = {
         const token = localStorage.getItem('client_token');
         return apiService.request(API_ENDPOINTS.CLIENT_APPLICATIONS, {
             method: 'GET',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    },
+    acceptMOU: (id) => {
+        const token = localStorage.getItem('client_token');
+        return apiService.request(API_ENDPOINTS.CLIENT_ACCEPT_MOU(id), {
+            method: 'POST',
+            body: JSON.stringify({}),
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }
+        });
+    }
+};
+
+// Auditor API
+export const auditorApi = {
+    getAssignments: () => {
+        const token = localStorage.getItem('auditor_token');
+        return apiService.request(API_ENDPOINTS.AUDITOR_ASSIGNMENTS, {
+            method: 'GET',
+            headers: { Authorization: `Bearer ${token}` }
+        });
+    },
+    submitReport: (id, formData) => {
+        const token = localStorage.getItem('auditor_token');
+        return apiService.request(API_ENDPOINTS.AUDITOR_SUBMIT_REPORT(id), {
+            method: 'POST',
+            body: formData,
             headers: { Authorization: `Bearer ${token}` }
         });
     }

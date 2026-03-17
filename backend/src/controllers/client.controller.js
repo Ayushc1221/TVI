@@ -16,10 +16,12 @@ exports.loginClient = async (req, res) => {
             });
         }
 
+        const cleanPhone = phone.replace(/\s+/g, '');
+
         // Find ALL applications for this email and phone
         const applications = await Application.find({
             email: email.toLowerCase().trim(),
-            phone: phone.trim()
+            phone: cleanPhone
         });
 
         if (!applications || applications.length === 0) {
@@ -43,11 +45,10 @@ exports.loginClient = async (req, res) => {
         // Use the most recent application to grab the name and company for the token payload
         const latestApp = applications.sort((a, b) => b.createdAt - a.createdAt)[0];
 
-        // Generate token
         const token = jwt.sign(
             { 
                 email: email.toLowerCase().trim(), 
-                phone: phone.trim(),
+                phone: cleanPhone,
                 role: 'client' 
             },
             config.jwt.secret,
@@ -83,9 +84,18 @@ exports.loginClient = async (req, res) => {
 exports.getClientApplications = async (req, res) => {
     try {
         const { email, phone } = req.client;
+        
+        // Ensure any old tokens with whitespace are handled
+        const cleanPhone = phone ? phone.replace(/\s+/g, '') : '';
+        
+        console.log('--- GET CLIENT APPLICATIONS ---');
+        console.log('Token Payload:', { email, phone });
+        console.log('Querying DB with:', { email, cleanPhone });
 
         // Fetch all applications matching the authenticated email and phone
-        const applications = await Application.find({ email, phone }).sort('-createdAt');
+        const applications = await Application.find({ email, phone: cleanPhone }).sort('-createdAt');
+        
+        console.log(`Found ${applications.length} applications`);
 
         res.status(200).json({
             success: true,
@@ -98,6 +108,50 @@ exports.getClientApplications = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server error fetching applications'
+        });
+    }
+};
+
+// @desc    Accept MOU (Client)
+// @route   POST /api/client/applications/:id/accept-mou
+// @access  Private (Client)
+exports.acceptMOU = async (req, res) => {
+    try {
+        const { email, phone } = req.client;
+        const applicationId = req.params.id;
+        
+        const cleanPhone = phone ? phone.replace(/\s+/g, '') : '';
+
+        const application = await Application.findOne({
+            applicationId,
+            email,
+            phone: cleanPhone
+        });
+
+        if (!application) {
+            return res.status(404).json({ success: false, message: 'Application not found or unauthorized' });
+        }
+
+        if (application.mouStatus !== 'sent_to_client') {
+            return res.status(400).json({ success: false, message: 'MOU is not pending acceptance' });
+        }
+
+        application.mouStatus = 'accepted';
+        application.status = 'mou_accepted';
+
+        await application.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'MOU accepted successfully',
+            data: application
+        });
+
+    } catch (error) {
+        console.error('Accept MOU error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server error accepting MOU'
         });
     }
 };

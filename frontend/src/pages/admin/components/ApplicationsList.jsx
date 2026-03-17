@@ -9,7 +9,8 @@ import {
     Eye,
     ChevronLeft,
     ChevronRight,
-    Loader2
+    Loader2,
+    AlertCircle
 } from 'lucide-react';
 import { applicationApi } from '../../../services';
 
@@ -74,6 +75,14 @@ const ApplicationsList = ({ onViewDetails }) => {
         return new Date(dateStr).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
     };
 
+    const overdueAudits = appList.filter(app => {
+        if (app.status === 'audit_assigned' && app.auditAssignedDate) {
+            const daysElapsed = (new Date() - new Date(app.auditAssignedDate)) / (1000 * 60 * 60 * 24);
+            return daysElapsed > 5;
+        }
+        return false;
+    });
+
     return (
         <div className="space-y-6">
             {/* Header Controls */}
@@ -110,14 +119,34 @@ const ApplicationsList = ({ onViewDetails }) => {
                         <option value="">All Status</option>
                         <option value="submitted">Submitted</option>
                         <option value="under_review">Under Review</option>
-                        <option value="approved">Approved</option>
+                        <option value="quotation_sent">Invoice Sent</option>
+                        <option value="mou_accepted">Agreement Accepted</option>
                         <option value="audit_assigned">Audit Assigned</option>
+                        <option value="audit_report_submitted">Audit Report Submitted</option>
+                        <option value="review_approved">Review Approved</option>
                         <option value="certificate_generated">Cert Generated</option>
                         <option value="completed">Completed</option>
                         <option value="rejected">Rejected</option>
                     </select>
                 </div>
             </div>
+
+            {/* 5-Day SLA Warnings Banner */}
+            {overdueAudits.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                        <h3 className="font-bold text-red-800">Critical SLA Warnings - Auditor Reports Overdue</h3>
+                    </div>
+                    <ul className="space-y-1 pl-7 list-disc">
+                        {overdueAudits.map(app => (
+                            <li key={app.applicationId} className="text-sm text-red-700 font-medium">
+                                Auditor <b>{app.assignedAuditor}</b> has missed the 5-day report submission deadline for <b>{app.applicationId}</b> ({app.companyName}).
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
             {/* Applications Table */}
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
@@ -149,7 +178,19 @@ const ApplicationsList = ({ onViewDetails }) => {
                                 {appList.map((app) => (
                                     <tr key={app.applicationId} className="hover:bg-slate-50 transition-colors group">
                                         <td className="px-6 py-4 text-sm font-semibold text-slate-800 whitespace-nowrap">{app.applicationId}</td>
-                                        <td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">{app.companyName}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-slate-700 whitespace-nowrap">
+                                            {app.companyName}
+                                            {(() => {
+                                                if (['completed', 'rejected', 'certificate_generated'].includes(app.status)) return null;
+                                                const daysRunning = Math.floor((new Date() - new Date(app.createdAt)) / (1000 * 60 * 60 * 24));
+                                                if (daysRunning >= 35 && daysRunning <= 42) {
+                                                    return <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-orange-100 text-orange-700 rounded-md">Warning: {daysRunning}/42 Days</span>;
+                                                } else if (daysRunning > 42) {
+                                                    return <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-red-100 text-red-700 rounded-md">Breach: {daysRunning}/42 Days</span>;
+                                                }
+                                                return <span className="ml-2 px-2 py-0.5 text-[10px] font-bold bg-slate-100 text-slate-600 rounded-md">{daysRunning}/42 Days</span>;
+                                            })()}
+                                        </td>
                                         <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">{app.serviceType}</td>
                                         <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{app.certificationType}</td>
                                         <td className="px-6 py-4 text-sm text-slate-500 whitespace-nowrap">{app.assignedAuditor || '-'}</td>

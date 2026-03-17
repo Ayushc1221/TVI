@@ -7,6 +7,9 @@ const {
     getApplicationById,
     assignAuditor,
     updateStatus,
+    uploadMOU,
+    technicalReview,
+    verifyDocument
 } = require('../controllers/application.controller');
 const { authenticate } = require('../middleware');
 
@@ -35,5 +38,14 @@ router.put('/assign-auditor', authenticate, assignAuditor);
 
 // PUT /api/applications/status
 router.put('/status', authenticate, updateStatus);
+
+// POST /api/applications/:id/mou
+router.post('/:id/mou', authenticate, upload.single('mouDocument'), uploadMOU);
+
+// POST /api/applications/:id/review
+router.post('/:id/review', authenticate, technicalReview);
+
+// PUT /api/applications/:id/documents/:docId/verify
+router.put('/:id/documents/:docId/verify', authenticate, verifyDocument);
 
 module.exports = router;

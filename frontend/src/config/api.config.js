@@ -40,6 +40,8 @@ export const API_ENDPOINTS = {
     APPLICATION_BY_ID: (id) => `/applications/${id}`,
     APPLICATION_ASSIGN_AUDITOR: '/applications/assign-auditor',
     APPLICATION_STATUS: '/applications/status',
+    APPLICATION_UPLOAD_MOU: (id) => `/applications/${id}/mou`,
+    APPLICATION_TECH_REVIEW: (id) => `/applications/${id}/review`,
 
     // Certificates
     CERTIFICATE_GENERATE: '/certificates/generate',
@@ -59,6 +61,11 @@ export const API_ENDPOINTS = {
     // Client
     CLIENT_LOGIN: '/client/login',
     CLIENT_APPLICATIONS: '/client/applications',
+    CLIENT_ACCEPT_MOU: (id) => `/client/applications/${id}/accept-mou`,
+
+    // Auditor
+    AUDITOR_ASSIGNMENTS: '/auditor/assignments',
+    AUDITOR_SUBMIT_REPORT: (id) => `/auditor/assignments/${id}/report`,
 };
 
 export default {

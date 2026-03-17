@@ -99,6 +99,10 @@ app.use('/api/verify', verificationRoutes);
 app.use('/api/settings', settingRoutes);
 app.use('/api/client', clientRoutes);
 
+// Register Auditor Routes
+const auditorRoutes = require('./src/routes/auditor.routes');
+app.use('/api/auditor', auditorRoutes);
+
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 

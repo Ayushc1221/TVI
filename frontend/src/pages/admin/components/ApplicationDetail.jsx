@@ -1,6 +1,6 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge, Loader2 } from 'lucide-react';
+import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge, Loader2, FileSignature, UserCircle, ClipboardCheck, Scale, UploadCloud, AlertCircle, Clock } from 'lucide-react';
 import { applicationApi } from '../../../services';
 
 // Fallback mock data for fields not yet in backend
@@ -44,6 +44,13 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
     const [loading, setLoading] = useState(true);
     const [currentStatus, setCurrentStatus] = useState('');
     const [rejectionReason, setRejectionReason] = useState('');
+
+    // Workflow States
+    const [mouFile, setMouFile] = useState(null);
+    const [quotationAmount, setQuotationAmount] = useState('');
+    const [assignAuditorName, setAssignAuditorName] = useState('');
+    const [techReviewStatus, setTechReviewStatus] = useState('approved');
+    const [techReviewNotes, setTechReviewNotes] = useState('');
 
     useEffect(() => {
         const fetchApp = async () => {
@@ -103,6 +110,18 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                             hrPoliciesAvailable: d.hrPolicies || '-',
                             complianceStatus: d.labourLawCompliance || '-'
                         },
+                        internals: {
+                            quotationAmount: d.quotationAmount || '',
+                            mouDocument: d.mouDocument || null,
+                            mouStatus: d.mouStatus || 'pending_admin',
+                            assignedAuditor: d.assignedAuditor || null,
+                            auditAssignedDate: d.auditAssignedDate || null,
+                            auditReportDocument: d.auditReportDocument || null,
+                            auditObservations: d.auditObservations || '',
+                            auditReportSubmittedAt: d.auditReportSubmittedAt || null,
+                            technicalReviewStatus: d.technicalReviewStatus || 'pending',
+                            technicalReviewNotes: d.technicalReviewNotes || ''
+                        }
                     });
                     setCurrentStatus(d.status);
                 }
@@ -122,6 +141,51 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
         } catch (err) {
             alert('Failed to update status');
             console.error(err);
+        }
+    };
+
+    const handleUploadMOU = async (e) => {
+        e.preventDefault();
+        if(!mouFile || !quotationAmount) return alert('MOU file and amount required');
+        const formData = new FormData();
+        formData.append('mouDocument', mouFile);
+        formData.append('quotationAmount', quotationAmount);
+        try {
+            await applicationApi.uploadMOU(applicationId, formData);
+            alert('MOU uploaded successfully!');
+            window.location.reload();
+        } catch(error) { alert('Failed to upload MOU'); console.error(error); }
+    };
+
+    const handleAssignAuditor = async (e) => {
+        e.preventDefault();
+        if(!assignAuditorName) return;
+        try {
+            await applicationApi.assignAuditor({ applicationId, assignedAuditor: assignAuditorName });
+            alert('Auditor Assigned successfully!');
+            window.location.reload();
+        } catch(error) { alert('Failed to assign auditor'); console.error(error); }
+    };
+
+    const handleTechReview = async (e) => {
+        e.preventDefault();
+        try {
+            await applicationApi.techReview(applicationId, { technicalReviewStatus: techReviewStatus, technicalReviewNotes: techReviewNotes});
+            alert('Technical Review saved!');
+            window.location.reload();
+        } catch(error) { alert('Failed to save review'); console.error(error); }
+    };
+
+    const handleVerifyDocument = async (docId) => {
+        try {
+            await applicationApi.verifyDocument(applicationId, docId);
+            setApp(prev => ({
+                ...prev,
+                documents: prev.documents.map(d => (d._id || d.id) === docId ? { ...d, verified: !d.verified } : d)
+            }));
+        } catch (error) {
+            alert('Failed to verify document');
+            console.error(error);
         }
     };
 
@@ -295,7 +359,7 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                         </div>
                                         <div className="flex items-center gap-3 sm:gap-4">
                                             <div className="flex items-center gap-1.5 mr-2">
-                                                <button className={`flex items-center gap-1.5 text-xs font-semibold px-2. py-1 rounded-md transition-colors ${doc.verified ? 'text-emerald-700 bg-emerald-100' : 'text-slate-500 bg-slate-100 hover:bg-slate-200'}`}>
+                                                <button onClick={() => handleVerifyDocument(doc._id || doc.id)} className={`flex items-center gap-1.5 text-xs font-semibold px-2 py-1 rounded-md transition-colors ${doc.verified ? 'text-emerald-700 bg-emerald-100' : 'text-slate-500 bg-slate-100 hover:bg-slate-200'}`}>
                                                     {doc.verified ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
                                                     Verified
                                                 </button>
@@ -403,8 +467,11 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                 >
                                     <option value="submitted">Submitted</option>
                                     <option value="under_review">Under Review</option>
-                                    <option value="approved">Approved</option>
+                                    <option value="quotation_sent">Invoice Sent</option>
+                                    <option value="mou_accepted">Agreement Accepted</option>
                                     <option value="audit_assigned">Audit Assigned</option>
+                                    <option value="audit_report_submitted">Audit Report Submitted</option>
+                                    <option value="review_approved">Review Approved</option>
                                     <option value="certificate_generated">Cert Generated</option>
                                     <option value="completed">Completed</option>
                                     <option value="rejected">Rejected</option>
@@ -436,6 +503,134 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                             </button>
                         </div>
                     </div>
+
+                    {/* SECTION: Commercials & Quotation */}
+                    {app.serviceType === 'iso' && !['submitted', 'rejected'].includes(currentStatus) && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
+                                <FileSignature className="w-5 h-5 text-emerald-600" />
+                                <h3 className="font-bold text-slate-800">Invoice & Audit Agreement</h3>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                {app.internals.mouStatus !== 'pending_admin' ? (
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <span className="text-sm font-semibold text-slate-600">Invoice Amount</span>
+                                            <span className="text-md font-bold text-slate-800">₹{app.internals.quotationAmount}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                            <span className="text-sm font-semibold text-slate-600">Agreement Status</span>
+                                            <span className={`px-2 py-1 text-xs font-bold uppercase rounded-md ${app.internals.mouStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{app.internals.mouStatus.replace('_', ' ')}</span>
+                                        </div>
+                                        {app.internals.mouDocument && (
+                                           <a href={`http://localhost:5000${app.internals.mouDocument}`} target="_blank" rel="noreferrer" className="w-full flex justify-center items-center gap-2 py-2 border border-blue-200 bg-blue-50 text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors">
+                                               <Eye className="w-4 h-4"/> View Sent Agreement
+                                           </a>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleUploadMOU} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Invoice Amount (₹)</label>
+                                            <input type="number" required value={quotationAmount} onChange={e=>setQuotationAmount(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Upload Audit Agreement PDF</label>
+                                            <input type="file" required accept=".pdf" onChange={e=>setMouFile(e.target.files[0])} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                        </div>
+                                        <button type="submit" className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm">
+                                            <UploadCloud className="w-4 h-4"/> Send to Client
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECTION: Auditor Assignment */}
+                    {app.internals.mouStatus === 'accepted' && currentStatus !== 'completed' && currentStatus !== 'certificate_generated' && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
+                                <UserCircle className="w-5 h-5 text-amber-500" />
+                                <h3 className="font-bold text-slate-800">Auditor Assignment</h3>
+                            </div>
+                            <div className="p-6">
+                                {app.internals.assignedAuditor ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center text-amber-600 font-bold uppercase shrink-0">
+                                                {app.internals.assignedAuditor.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-slate-800 text-sm">{app.internals.assignedAuditor}</p>
+                                                <p className="text-xs text-slate-500 font-medium">Assigned Auditor</p>
+                                            </div>
+                                        </div>
+                                        <div className="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center gap-2">
+                                            <Clock className="w-4 h-4 text-slate-400"/>
+                                            <span className="text-xs font-semibold text-slate-600">Assigned: {new Date(app.internals.auditAssignedDate).toLocaleDateString()}</span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleAssignAuditor} className="space-y-4">
+                                        <p className="text-xs text-slate-500 mb-2">Assign an auditor to begin the 5-day SLA timer.</p>
+                                        <input type="text" placeholder="Auditor Name or Email" value={assignAuditorName} onChange={e=>setAssignAuditorName(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+                                        <button type="submit" className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm">
+                                            Assign Auditor
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECTION: Technical Review */}
+                    {app.internals.auditReportDocument && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
+                                <ClipboardCheck className="w-5 h-5 text-blue-600" />
+                                <h3 className="font-bold text-slate-800">Technical Review</h3>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <p className="text-xs font-bold text-slate-500 uppercase mb-2">Submitted Audit Report</p>
+                                    <div className="flex gap-2">
+                                        <a href={`http://localhost:5000${app.internals.auditReportDocument}`} target="_blank" rel="noreferrer" className="flex-1 text-center py-2 bg-white border border-slate-300 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-100 shadow-sm">View Report</a>
+                                    </div>
+                                    {app.internals.auditObservations && (
+                                        <div className="mt-3">
+                                            <p className="text-xs font-bold text-slate-500 uppercase mb-1">Auditor Notes</p>
+                                            <p className="text-sm text-slate-700 bg-white p-2 border border-slate-200 rounded-lg">{app.internals.auditObservations}</p>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {app.internals.technicalReviewStatus !== 'pending' ? (
+                                    <div className={`p-4 rounded-xl border ${app.internals.technicalReviewStatus === 'approved' ? 'bg-emerald-50 border-emerald-200': 'bg-red-50 border-red-200'}`}>
+                                        <p className={`font-bold text-sm ${app.internals.technicalReviewStatus === 'approved' ? 'text-emerald-700' : 'text-red-700'} uppercase tracking-wider`}>Review: {app.internals.technicalReviewStatus.replace('_', ' ')}</p>
+                                        <p className="text-sm mt-1 text-slate-700">{app.internals.technicalReviewNotes}</p>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleTechReview} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Review Decision</label>
+                                            <select value={techReviewStatus} onChange={e=>setTechReviewStatus(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white">
+                                                <option value="approved">Approve & Generate Certificate</option>
+                                                <option value="requires_rework">Reject & Require Rework</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Review Notes</label>
+                                            <textarea rows="2" value={techReviewNotes} onChange={e=>setTechReviewNotes(e.target.value)} placeholder="Add technical remarks..." className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500"></textarea>
+                                        </div>
+                                        <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm shadow-sm">
+                                            Submit Review
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* SECTION 3: Service-Specific Details */}
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden h-max sticky top-24">

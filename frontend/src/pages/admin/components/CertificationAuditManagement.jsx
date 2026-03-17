@@ -50,7 +50,7 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
             const res = await applicationApi.getAll(params);
             if (res.success) {
                 // Determine which statuses constitute "workflow"
-                const workflowStatuses = ['approved', 'under_review', 'audit_assigned', 'certificate_generated', 'completed'];
+                const workflowStatuses = ['approved', 'under_review', 'audit_assigned', 'review_approved', 'certificate_generated', 'completed'];
 
                 const workflowApps = res.data
                     .filter(app => {
@@ -124,30 +124,6 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
             const mapType = { 'iso': 'ISO', 'audit': 'AUDIT', 'hraa': 'HRAA' };
             const serviceType = mapType[selectedAppForModal?.service?.toLowerCase()] || 'ISO';
 
-            try {
-                const response = await certificateApi.generate({
-                    applicationId: selectedAppForModal.id,
-                    companyName: certFormData.companyName,
-                    certificationType: certFormData.certificationType,
-                    scope: certFormData.scope,
-                    issueDate: certFormData.issueDate,
-                    expiryDate: certFormData.expiryDate,
-                    serviceType,
-                });
-
-                if (response.success) {
-                    // Also update application status
-                    await applicationApi.updateStatus({ applicationId: selectedAppForModal.id, status: 'certificate_generated' });
-
-                    console.log('Certificate generated via backend:', response.data);
-                    alert("Certificate Generated and Saved Successfully!");
-                    fetchWorkflowApps(); // Refresh to update status progress
-                }
-            } catch (err) {
-                console.error('Failed to generate certificate via backend', err);
-                alert("Failed to save certificate data to Database");
-            }
-
             const opt = {
                 margin: 0,
                 filename: `${certFormData.certificateNumber || selectedAppForModal.id}-Certificate.pdf`,
@@ -156,10 +132,46 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
                 jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
             };
 
-            html2pdf().from(element).set(opt).save().then(() => {
-                setShowPreviewModal(false);
-                setShowGenerateModal(null);
-            });
+            try {
+                // Generate the PDF blob first
+                const pdfBlob = await html2pdf().from(element).set(opt).outputPdf('blob');
+
+                // Prepare FormData to upload both details and the actual PDF file
+                const formData = new FormData();
+                formData.append('applicationId', selectedAppForModal.id);
+                formData.append('companyName', certFormData.companyName);
+                if (certFormData.certificateNumber) formData.append('certificateNumber', certFormData.certificateNumber);
+                formData.append('certificationType', certFormData.certificationType);
+                formData.append('scopeOfBusiness', certFormData.scope);
+                formData.append('issueDate', certFormData.issueDate);
+                formData.append('expiryDate', certFormData.expiryDate);
+                formData.append('serviceType', serviceType);
+                if (certFormData.authorizedSignatory) formData.append('authorizedSignatory', certFormData.authorizedSignatory);
+                
+                // Append the blob as a file
+                const file = new File([pdfBlob], opt.filename, { type: 'application/pdf' });
+                formData.append('certificateFile', file);
+
+                const response = await certificateApi.generate(formData);
+
+                if (response.success) {
+                    // Update application status
+                    await applicationApi.updateStatus({ applicationId: selectedAppForModal.id, status: 'certificate_generated' });
+
+                    console.log('Certificate generated via backend:', response.data);
+                    alert("Certificate Generated and Saved Successfully!");
+                    
+                    // Also trigger the local download for the admin
+                    html2pdf().from(element).set(opt).save().then(() => {
+                        setShowPreviewModal(false);
+                        setShowGenerateModal(null);
+                        fetchWorkflowApps(); // Refresh to update status progress
+                    });
+                }
+            } catch (err) {
+                console.error('Failed to generate certificate via backend', err);
+                alert("Failed to save certificate data to Database");
+            }
         }
     };
 

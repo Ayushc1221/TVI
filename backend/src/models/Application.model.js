@@ -65,6 +65,7 @@ const applicationSchema = new mongoose.Schema(
                 name: String,
                 url: String,
                 uploadedAt: { type: Date, default: Date.now },
+                verified: { type: Boolean, default: false }
             },
         ],
 
@@ -74,8 +75,11 @@ const applicationSchema = new mongoose.Schema(
             enum: [
                 'submitted',
                 'under_review',
-                'approved',
+                'quotation_sent',
+                'mou_accepted',
                 'audit_assigned',
+                'audit_report_submitted',
+                'review_approved',
                 'certificate_generated',
                 'completed',
                 'rejected',
@@ -89,7 +93,32 @@ const applicationSchema = new mongoose.Schema(
         adminNotes: {
             type: String,
             default: ''
-        }
+        },
+
+        // --- NEW FIELDS FOR ISO WORKFLOW ---
+        // Commercials (Admin & Client)
+        quotationAmount: { type: Number },
+        mouDocument: { type: String }, // URL to uploaded MOU PDF
+        mouStatus: { 
+            type: String, 
+            enum: ['pending_admin', 'sent_to_client', 'accepted', 'rejected'],
+            default: 'pending_admin'
+        },
+
+        // Audit Execution (Auditor & SLA Tracking)
+        auditAssignedDate: { type: Date }, // Marks start of SLA
+        auditReportDocument: { type: String }, // URL to report
+        auditObservations: { type: String }, // Notes/NCs
+        auditReportSubmittedAt: { type: Date },
+
+        // Technical Review & Certification (Admin)
+        technicalReviewStatus: { 
+            type: String, 
+            enum: ['pending', 'approved', 'requires_rework'],
+            default: 'pending'
+        },
+        technicalReviewNotes: { type: String },
+        certificationExpiryDate: { type: Date }
     },
     { timestamps: true }
 );

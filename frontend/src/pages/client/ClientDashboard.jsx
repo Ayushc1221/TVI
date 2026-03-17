@@ -8,12 +8,13 @@ import {
     CheckCircle, 
     AlertCircle,
     Building2,
-    Calendar
+    Calendar,
+    Eye
 } from 'lucide-react';
 
 import Sidebar from '../admin/components/Sidebar';
 import Header from '../admin/components/Header';
-import { clientApi } from '../../services';
+import { clientApi, certificateApi } from '../../services';
 
 const ClientDashboard = () => {
     const navigate = useNavigate();
@@ -78,6 +79,53 @@ const ClientDashboard = () => {
         return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
+    const renderProgressBar = (status) => {
+        const steps = [
+            { id: 'submitted', label: 'Submitted' },
+            { id: 'mou_accepted', label: 'Agreement Accepted', triggers: ['quotation_sent', 'mou_accepted'] },
+            { id: 'audit_assigned', label: 'Audit Ongoing', triggers: ['audit_assigned', 'audit_report_submitted'] },
+            { id: 'review_approved', label: 'Review', triggers: ['review_approved'] },
+            { id: 'completed', label: 'Completed', triggers: ['certificate_generated', 'completed'] }
+        ];
+
+        let currentStepIndex = 0;
+        if (['quotation_sent', 'mou_accepted'].includes(status)) currentStepIndex = 1;
+        if (['audit_assigned', 'audit_report_submitted'].includes(status)) currentStepIndex = 2;
+        if (['review_approved'].includes(status)) currentStepIndex = 3;
+        if (['certificate_generated', 'completed'].includes(status)) currentStepIndex = 4;
+        if (status === 'rejected') currentStepIndex = -1;
+
+        return (
+            <div className="w-full py-6 px-4 hidden md:block border-b border-slate-100 bg-slate-50/20">
+                <div className="flex items-center justify-between relative max-w-3xl mx-auto">
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 z-0 rounded-full"></div>
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-indigo-500 z-0 rounded-full transition-all duration-500" style={{ width: currentStepIndex >= 0 ? `${(currentStepIndex / 4) * 100}%` : '0%' }}></div>
+                    
+                    {steps.map((step, idx) => {
+                        const isCompleted = currentStepIndex >= idx;
+                        const isCurrent = currentStepIndex === idx;
+                        const isRejected = status === 'rejected';
+
+                        return (
+                            <div key={step.id} className="relative z-10 flex flex-col items-center gap-2 bg-transparent">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center border-2 font-bold text-xs shadow-sm transition-colors ${
+                                    isRejected ? 'bg-red-100 border-red-500 text-red-600' :
+                                    isCompleted ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-slate-300 text-slate-400'
+                                }`}>
+                                    {isCompleted && !isRejected ? <CheckCircle className="w-4 h-4"/> : (isRejected ? <AlertCircle className="w-4 h-4"/> : idx + 1)}
+                                </div>
+                                <span className={`absolute -bottom-6 w-32 text-center text-[10px] font-bold uppercase tracking-wider ${isCurrent && !isRejected ? 'text-indigo-700' : (isCompleted ? 'text-slate-700' : 'text-slate-400')}`}>
+                                    {step.label}
+                                </span>
+                            </div>
+                        )
+                    })}
+                </div>
+                <div className="h-6"></div>
+            </div>
+        );
+    };
+
     const renderContent = () => {
         if (isLoading) {
             return (
@@ -128,6 +176,48 @@ const ClientDashboard = () => {
                             </div>
                         </div>
 
+                        {renderProgressBar(app.status)}
+
+                        {/* Agreement Action Area */}
+                        {app.status === 'quotation_sent' && app.mouStatus === 'sent_to_client' && (
+                            <div className="p-5 border-b border-slate-100 bg-amber-50">
+                                <div className="border border-amber-200 bg-white p-5 rounded-xl shadow-sm">
+                                    <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
+                                        <AlertCircle className="w-5 h-5 text-amber-500" /> Action Required: Accept Audit Agreement & Invoice
+                                    </h4>
+                                    <p className="text-sm text-slate-600 mb-4">
+                                        Your application has been reviewed. Please review the formal Audit Agreement and Invoice outlining the scope, requirements, and paid fees.
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-4">
+                                        <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase">Total Paid</span>
+                                            <span className="font-bold text-slate-800 text-lg">₹{app.quotationAmount}</span>
+                                        </div>
+                                        <a href={`http://localhost:5000${app.mouDocument}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-semibold transition-colors shadow-sm">
+                                            <Eye className="w-4 h-4"/> View PDF Document
+                                        </a>
+                                        <div className="ml-auto w-full sm:w-auto mt-2 sm:mt-0">
+                                            <button 
+                                                onClick={async () => {
+                                                    try {
+                                                        await clientApi.acceptMOU(app.applicationId);
+                                                        alert("Agreement Accepted Successfully!");
+                                                        fetchApplications();
+                                                    } catch(e) {
+                                                        alert('Failed to accept Agreement');
+                                                        console.error(e);
+                                                    }
+                                                }}
+                                                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
+                                            >
+                                                <CheckCircle className="w-4 h-4"/> Accept Agreement & Proceed
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Details Area */}
                         <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -151,16 +241,23 @@ const ClientDashboard = () => {
 
                         {/* Action Area for Download */}
                         {(app.status === 'certificate_generated' || app.status === 'completed') && (
-                            <div className="p-5 border-t border-slate-100 bg-indigo-50/30 flex justify-end">
+                            <div className="p-5 border-t border-slate-100 bg-indigo-50/30 flex justify-end gap-3">
+                                <a 
+                                    href={certificateApi.download(app._id)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="bg-white border border-indigo-600 text-indigo-700 hover:bg-indigo-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                                >
+                                    <Download className="w-4 h-4" />
+                                    Download PDF
+                                </a>
                                 <button 
                                     onClick={() => navigate('/verify')}
                                     className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
                                 >
-                                    <Download className="w-4 h-4" />
-                                    Verify / View Certificate
+                                    <Eye className="w-4 h-4" />
+                                    Verify Certificate
                                 </button>
-                                {/* Note: Ideally, there would be a direct download link returned by the API if a file was stored, 
-                                    but directing them to the verify page with their ID is a solid fallback for viewing the certificate */}
                             </div>
                         )}
                     </div>

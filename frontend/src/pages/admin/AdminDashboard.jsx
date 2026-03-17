@@ -40,12 +40,13 @@ const AdminDashboard = () => {
     // Sidebar Menu Items for Certification Platform
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'applications', label: 'Applications', icon: FileText },
-        { id: 'payments', label: 'Payments', icon: CreditCard },
-        { id: 'certifications', label: 'Certification / Audit', icon: Award },
+        { id: 'applications', label: 'Verify Applications', icon: FileText },
+        { id: 'payments', label: 'Invoices & Payments', icon: CreditCard },
+        { id: 'auditor_assignments', label: 'Assign Auditor', icon: Users },
         { id: 'documents', label: 'Documents', icon: FolderOpen },
         { id: 'users', label: 'Users / Clients', icon: Users },
         { id: 'settings', label: 'Settings', icon: Settings },
+        { id: 'certifications', label: 'Generate Certificate', icon: Award },
     ];
 
     const renderContent = () => {
@@ -75,7 +76,7 @@ const AdminDashboard = () => {
             return <Payments onViewApplication={(id) => setSelectedApplicationId(id)} />;
         }
 
-        if (activeTab === 'certifications') {
+        if (activeTab === 'certifications' || activeTab === 'auditor_assignments') {
             return <CertificationAuditManagement onViewDetails={(id) => setSelectedApplicationId(id)} />;
         }
 

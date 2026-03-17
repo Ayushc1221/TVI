@@ -5,7 +5,12 @@ const Certificate = require('../models/Certificate.model');
 // @access  Private (Admin)
 exports.generateCertificate = async (req, res) => {
     try {
-        const { certificateNumber, companyName, certificationType, scopeOfBusiness, issueDate, expiryDate, authorizedSignatory, applicationId, certificateFileUrl, qrCodeUrl } = req.body;
+        const { certificateNumber, companyName, certificationType, scopeOfBusiness, issueDate, expiryDate, authorizedSignatory, applicationId, qrCodeUrl } = req.body;
+        
+        let certificateFileUrl = req.body.certificateFileUrl;
+        if (req.file) {
+            certificateFileUrl = `/uploads/${req.file.filename}`;
+        }
 
         const newCert = await Certificate.create({
             applicationId,
@@ -97,6 +102,48 @@ exports.verifyCertificate = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Server Error verifying certificate'
+        });
+    }
+};
+
+// @desc    Download / View a certificate Document by App ID or Cert ID
+// @route   GET /api/certificates/download/:id
+// @access  Public
+exports.downloadCertificate = async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Try to find the certificate by its database ID or the application ID
+        let certificate;
+        if (id.match(/^[0-9a-fA-F]{24}$/)) {
+            certificate = await Certificate.findOne({
+                $or: [{ _id: id }, { applicationId: id }]
+            });
+        } else {
+            certificate = await Certificate.findOne({ applicationId: id });
+        }
+
+        // Graceful fallback: If we have an actual physically uploaded PDF, send them to it
+        if (certificate && certificate.certificateFileUrl) {
+            return res.redirect(certificate.certificateFileUrl);
+        }
+
+        if (!certificate || !certificate.certificateNumber) {
+            return res.status(404).json({
+                success: false,
+                message: 'Certificate not found'
+            });
+        }
+
+        // Since older applications generated PDFs on the client-side without storing the raw PDF file,
+        // we redirect the user to the Verification page where they can view/print it dynamically.
+        res.redirect(`http://localhost:3000/verify?cert=${certificate.certificateNumber}`);
+
+    } catch (error) {
+        console.error('Download certificate error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error downloading certificate'
         });
     }
 };

@@ -9,5 +9,6 @@ router.post('/login', clientController.loginClient);
 // Protected routes for client
 router.use(authenticateClient);
 router.get('/applications', clientController.getClientApplications);
+router.post('/applications/:id/accept-mou', clientController.acceptMOU);
 
 module.exports = router;
