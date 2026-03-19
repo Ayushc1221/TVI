@@ -191,6 +191,7 @@ exports.updateStatus = async (req, res, next) => {
         const validStatuses = [
             'submitted',
             'under_review',
+            'invoice_sent',
             'quotation_sent',
             'mou_accepted',
             'audit_assigned',
@@ -237,7 +238,41 @@ exports.updateStatus = async (req, res, next) => {
     }
 };
 
-// @desc    Upload MOU and set quotation amount (Admin)
+// @desc    Upload Invoice PDF and send to client (Admin) - Step 2
+// @route   POST /api/applications/:id/invoice
+// @access  Private
+exports.uploadInvoice = async (req, res, next) => {
+    try {
+        const { quotationAmount } = req.body;
+        const applicationId = req.params.id;
+
+        const application = await Application.findOne({ applicationId });
+        if (!application) {
+            return res.status(404).json({ success: false, message: 'Application not found' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'Invoice PDF is required' });
+        }
+
+        application.invoiceDocument = `/uploads/${req.file.filename}`;
+        application.invoiceStatus = 'sent_to_client';
+        application.quotationAmount = quotationAmount || application.quotationAmount;
+        application.status = 'invoice_sent';
+
+        await application.save();
+
+        res.status(200).json({
+            success: true,
+            message: 'Invoice uploaded and sent to client',
+            data: application
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Upload MOU and send to client (Admin) - Step 3
 // @route   POST /api/applications/:id/mou
 // @access  Private
 exports.uploadMOU = async (req, res, next) => {

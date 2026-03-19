@@ -76,23 +76,38 @@ const ClientDashboard = () => {
     };
 
     const formatStatus = (status) => {
-        return status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        const statusMap = {
+            'submitted': 'Submitted',
+            'under_review': 'Under Review',
+            'invoice_sent': 'Invoice Sent',
+            'quotation_sent': 'MOU Sent',
+            'mou_accepted': 'Agreement Accepted',
+            'audit_assigned': 'Audit Assigned',
+            'audit_report_submitted': 'Audit Report Submitted',
+            'review_approved': 'Review Approved',
+            'certificate_generated': 'Certificate Generated',
+            'completed': 'Completed',
+            'rejected': 'Rejected',
+        };
+        return statusMap[status] || status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     };
 
     const renderProgressBar = (status) => {
         const steps = [
             { id: 'submitted', label: 'Submitted' },
-            { id: 'mou_accepted', label: 'Agreement Accepted', triggers: ['quotation_sent', 'mou_accepted'] },
-            { id: 'audit_assigned', label: 'Audit Ongoing', triggers: ['audit_assigned', 'audit_report_submitted'] },
-            { id: 'review_approved', label: 'Review', triggers: ['review_approved'] },
-            { id: 'completed', label: 'Completed', triggers: ['certificate_generated', 'completed'] }
+            { id: 'invoice_sent', label: 'Invoice Sent' },
+            { id: 'quotation_sent', label: 'MOU Sent' },
+            { id: 'mou_accepted', label: 'Agreement Accepted' },
+            { id: 'audit_assigned', label: 'Audit Ongoing' },
+            { id: 'completed', label: 'Completed' }
         ];
 
         let currentStepIndex = 0;
-        if (['quotation_sent', 'mou_accepted'].includes(status)) currentStepIndex = 1;
-        if (['audit_assigned', 'audit_report_submitted'].includes(status)) currentStepIndex = 2;
-        if (['review_approved'].includes(status)) currentStepIndex = 3;
-        if (['certificate_generated', 'completed'].includes(status)) currentStepIndex = 4;
+        if (status === 'invoice_sent') currentStepIndex = 1;
+        if (status === 'quotation_sent') currentStepIndex = 2;
+        if (status === 'mou_accepted') currentStepIndex = 3;
+        if (['audit_assigned', 'audit_report_submitted', 'review_approved'].includes(status)) currentStepIndex = 4;
+        if (['certificate_generated', 'completed'].includes(status)) currentStepIndex = 5;
         if (status === 'rejected') currentStepIndex = -1;
 
         return (
@@ -178,42 +193,78 @@ const ClientDashboard = () => {
 
                         {renderProgressBar(app.status)}
 
-                        {/* Agreement Action Area */}
-                        {app.status === 'quotation_sent' && app.mouStatus === 'sent_to_client' && (
-                            <div className="p-5 border-b border-slate-100 bg-amber-50">
-                                <div className="border border-amber-200 bg-white p-5 rounded-xl shadow-sm">
-                                    <h4 className="font-bold text-slate-800 flex items-center gap-2 mb-3">
-                                        <AlertCircle className="w-5 h-5 text-amber-500" /> Action Required: Accept Audit Agreement & Invoice
-                                    </h4>
-                                    <p className="text-sm text-slate-600 mb-4">
-                                        Your application has been reviewed. Please review the formal Audit Agreement and Invoice outlining the scope, requirements, and paid fees.
-                                    </p>
-                                    <div className="flex flex-wrap items-center gap-4">
-                                        <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2">
-                                            <span className="text-xs font-semibold text-slate-500 uppercase">Total Paid</span>
+                        {/* Documents Section: Shows Invoice + MOU downloads at all stages once sent */}
+                        {(app.invoiceDocument || app.mouDocument) && !['submitted', 'under_review'].includes(app.status) && (
+                            <div className={`p-5 border-b border-slate-100 ${app.status === 'quotation_sent' ? 'bg-amber-50' : 'bg-slate-50/50'}`}>
+                                <div className={`border bg-white p-5 rounded-xl shadow-sm ${app.status === 'quotation_sent' ? 'border-amber-200' : 'border-slate-200'}`}>
+
+                                    {/* Header */}
+                                    <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+                                        <h4 className="font-bold text-slate-800 flex items-center gap-2">
+                                            <FileText className="w-5 h-5 text-blue-500" />
+                                            {app.status === 'quotation_sent' ? 'Action Required: Accept Audit Agreement' : 'Your Documents'}
+                                        </h4>
+                                        {app.mouStatus === 'accepted' && (
+                                            <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full flex items-center gap-1">
+                                                <CheckCircle className="w-3 h-3" /> Agreement Accepted
+                                            </span>
+                                        )}
+                                    </div>
+
+                                    {app.status === 'quotation_sent' && (
+                                        <p className="text-sm text-slate-600 mb-4">Please review both documents below and accept the agreement to proceed.</p>
+                                    )}
+
+                                    {/* Amount */}
+                                    {app.quotationAmount && (
+                                        <div className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg flex items-center gap-2 w-max mb-4">
+                                            <span className="text-xs font-semibold text-slate-500 uppercase">Invoice Amount</span>
                                             <span className="font-bold text-slate-800 text-lg">₹{app.quotationAmount}</span>
                                         </div>
-                                        <a href={`http://localhost:5000${app.mouDocument}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 px-4 py-2.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-sm font-semibold transition-colors shadow-sm">
-                                            <Eye className="w-4 h-4"/> View PDF Document
-                                        </a>
-                                        <div className="ml-auto w-full sm:w-auto mt-2 sm:mt-0">
-                                            <button 
-                                                onClick={async () => {
-                                                    try {
-                                                        await clientApi.acceptMOU(app.applicationId);
-                                                        alert("Agreement Accepted Successfully!");
-                                                        fetchApplications();
-                                                    } catch(e) {
-                                                        alert('Failed to accept Agreement');
-                                                        console.error(e);
-                                                    }
-                                                }}
-                                                className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
+                                    )}
+
+                                    {/* Download Buttons - always visible */}
+                                    <div className="flex flex-wrap gap-3 mb-4">
+                                        {app.invoiceDocument && (
+                                            <a
+                                                href={`http://localhost:5000${app.invoiceDocument}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-sm font-semibold transition-colors shadow-sm"
                                             >
-                                                <CheckCircle className="w-4 h-4"/> Accept Agreement & Proceed
-                                            </button>
-                                        </div>
+                                                <Download className="w-4 h-4"/> Download Invoice
+                                            </a>
+                                        )}
+                                        {app.mouDocument && (
+                                            <a
+                                                href={`http://localhost:5000${app.mouDocument}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-lg text-sm font-semibold transition-colors shadow-sm"
+                                            >
+                                                <Download className="w-4 h-4"/> Download Agreement (MOU)
+                                            </a>
+                                        )}
                                     </div>
+
+                                    {/* Accept Button — only visible before acceptance */}
+                                    {app.status === 'quotation_sent' && app.mouStatus === 'sent_to_client' && (
+                                        <button
+                                            onClick={async () => {
+                                                try {
+                                                    await clientApi.acceptMOU(app.applicationId);
+                                                    alert("Agreement Accepted Successfully!");
+                                                    fetchApplications();
+                                                } catch(e) {
+                                                    alert('Failed to accept Agreement');
+                                                    console.error(e);
+                                                }
+                                            }}
+                                            className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition-colors text-sm"
+                                        >
+                                            <CheckCircle className="w-4 h-4"/> I've Reviewed & Accept the Agreement
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -243,7 +294,7 @@ const ClientDashboard = () => {
                         {(app.status === 'certificate_generated' || app.status === 'completed') && (
                             <div className="p-5 border-t border-slate-100 bg-indigo-50/30 flex justify-end gap-3">
                                 <a 
-                                    href={certificateApi.download(app._id)}
+                                    href={certificateApi.download(app.applicationId)}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="bg-white border border-indigo-600 text-indigo-700 hover:bg-indigo-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"

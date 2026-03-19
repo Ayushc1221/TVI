@@ -60,8 +60,13 @@ const DashboardHome = ({ onViewApplication, onViewAll }) => {
         switch (status) {
             case 'submitted': return <span className="px-2.5 py-1 text-xs font-semibold bg-yellow-100 text-yellow-700 rounded-full flex items-center gap-1 w-max"><Clock className="w-3 h-3" /> Submitted</span>;
             case 'under_review': return <span className="px-2.5 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full flex items-center gap-1 w-max"><Activity className="w-3 h-3" /> Under Review</span>;
+            case 'invoice_sent': return <span className="px-2.5 py-1 text-xs font-semibold bg-cyan-100 text-cyan-700 rounded-full flex items-center gap-1 w-max"><Activity className="w-3 h-3" /> Invoice Sent</span>;
+            case 'quotation_sent': return <span className="px-2.5 py-1 text-xs font-semibold bg-purple-100 text-purple-700 rounded-full flex items-center gap-1 w-max"><Activity className="w-3 h-3" /> MOU Sent</span>;
+            case 'mou_accepted': return <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Agreement Accepted</span>;
             case 'approved': return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Approved</span>;
             case 'audit_assigned': return <span className="px-2.5 py-1 text-xs font-semibold bg-indigo-100 text-indigo-700 rounded-full flex items-center gap-1 w-max"><Activity className="w-3 h-3" /> Audit Assigned</span>;
+            case 'audit_report_submitted': return <span className="px-2.5 py-1 text-xs font-semibold bg-violet-100 text-violet-700 rounded-full flex items-center gap-1 w-max"><Activity className="w-3 h-3" /> Report Submitted</span>;
+            case 'review_approved': return <span className="px-2.5 py-1 text-xs font-semibold bg-teal-100 text-teal-700 rounded-full flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Review Approved</span>;
             case 'certificate_generated': return <span className="px-2.5 py-1 text-xs font-semibold bg-teal-100 text-teal-700 rounded-full flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Cert Generated</span>;
             case 'completed': return <span className="px-2.5 py-1 text-xs font-semibold bg-emerald-100 text-emerald-700 rounded-full flex items-center gap-1 w-max"><CheckCircle className="w-3 h-3" /> Completed</span>;
             case 'rejected': return <span className="px-2.5 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full flex items-center gap-1 w-max"><XCircle className="w-3 h-3" /> Rejected</span>;

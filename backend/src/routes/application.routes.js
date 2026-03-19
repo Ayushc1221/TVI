@@ -7,6 +7,7 @@ const {
     getApplicationById,
     assignAuditor,
     updateStatus,
+    uploadInvoice,
     uploadMOU,
     technicalReview,
     verifyDocument
@@ -38,6 +39,9 @@ router.put('/assign-auditor', authenticate, assignAuditor);
 
 // PUT /api/applications/status
 router.put('/status', authenticate, updateStatus);
+
+// POST /api/applications/:id/invoice
+router.post('/:id/invoice', authenticate, upload.single('invoiceDocument'), uploadInvoice);
 
 // POST /api/applications/:id/mou
 router.post('/:id/mou', authenticate, upload.single('mouDocument'), uploadMOU);

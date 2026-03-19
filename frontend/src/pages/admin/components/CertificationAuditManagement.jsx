@@ -50,7 +50,7 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
             const res = await applicationApi.getAll(params);
             if (res.success) {
                 // Determine which statuses constitute "workflow"
-                const workflowStatuses = ['approved', 'under_review', 'audit_assigned', 'review_approved', 'certificate_generated', 'completed'];
+                const workflowStatuses = ['approved', 'under_review', 'invoice_sent', 'quotation_sent', 'mou_accepted', 'audit_assigned', 'audit_report_submitted', 'review_approved', 'certificate_generated', 'completed'];
 
                 const workflowApps = res.data
                     .filter(app => {
@@ -61,9 +61,15 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
                         return workflowStatuses.includes(app.status);
                     })
                     .map(app => {
-                        let progress = 25;
-                        if (app.status === 'audit_assigned') progress = 50;
-                        if (app.status === 'certificate_generated') progress = 80;
+                        let progress = 10;
+                        if (app.status === 'under_review') progress = 20;
+                        if (app.status === 'invoice_sent') progress = 35;
+                        if (app.status === 'quotation_sent') progress = 45;
+                        if (app.status === 'mou_accepted') progress = 55;
+                        if (app.status === 'audit_assigned') progress = 65;
+                        if (app.status === 'audit_report_submitted') progress = 75;
+                        if (app.status === 'review_approved') progress = 85;
+                        if (app.status === 'certificate_generated') progress = 95;
                         if (app.status === 'completed') progress = 100;
 
                         return {
@@ -336,13 +342,18 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
                                                 <div className="space-y-3">
                                                     <button
                                                         onClick={() => {
+                                                            const today = new Date();
+                                                            const issueStr = today.toISOString().split('T')[0];
+                                                            today.setFullYear(today.getFullYear() + 3);
+                                                            const expiryStr = today.toISOString().split('T')[0];
+                                                            
                                                             setCertFormData({
                                                                 certificateNumber: `TVI-${app.service}-${new Date().getFullYear()}-${sequenceCounters[app.service] || '001'}`,
                                                                 companyName: app.company,
                                                                 certificationType: app.service,
                                                                 scope: '',
-                                                                issueDate: new Date().toISOString().split('T')[0],
-                                                                expiryDate: '',
+                                                                issueDate: issueStr,
+                                                                expiryDate: expiryStr,
                                                                 authorizedSignatory: 'Director',
                                                                 notes: ''
                                                             });

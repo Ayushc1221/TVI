@@ -59,15 +59,22 @@ const defaultTemplate = `
 // @access  Private
 exports.generateCertificate = async (req, res, next) => {
     try {
+        console.log("GENERATE CERTIFICATE REQUEST BODY:", req.body);
+        console.log("GENERATE CERTIFICATE FILE:", req.file ? req.file.originalname : "No file");
+        
         const {
             applicationId,
             companyName,
             certificationType,
-            scope,
+            scopeOfBusiness,  // frontend sends this
+            scope,            // fallback
             issueDate,
             expiryDate,
             serviceType,
+            authorizedSignatory,
         } = req.body;
+
+        const scopeValue = scopeOfBusiness || scope || '';
 
         if (!applicationId || !companyName || !certificationType || !issueDate || !expiryDate || !serviceType) {
             return res.status(400).json({
@@ -81,7 +88,12 @@ exports.generateCertificate = async (req, res, next) => {
 
         // 2. Generate QR code containing verification link
         const qrCodeUrl = await generateQRCode(certificateNumber);
-        const qrCodeDataUrl = await generateQRCodeDataURL(certificateNumber);
+        let qrCodeDataUrl = '';
+        try {
+            qrCodeDataUrl = await generateQRCodeDataURL(certificateNumber);
+        } catch (e) {
+            console.warn('QR code data URL generation failed (non-critical):', e.message);
+        }
 
         // 3. Load certificate template (fallback to default)
         let templateHtml = defaultTemplate;
@@ -92,63 +104,65 @@ exports.generateCertificate = async (req, res, next) => {
             if (template && template.fileUrl) {
                 const templatePath = path.join(__dirname, '..', '..', template.fileUrl);
                 if (fs.existsSync(templatePath)) {
-                    // Check if it's an HTML file
-                    if (templatePath.endsWith('.html')) {
-                        templateHtml = fs.readFileSync(templatePath, 'utf8');
-                    } else {
-                        // If it's an image/logo background (handled differently in templateHtml)
-                        // For now we assume they upload HTML templates as requested.
-                        // If it's a PDF/Image, we would need a different logic to layer.
-                        // But let's stick to the HTML requirement.
-                        templateHtml = fs.readFileSync(templatePath, 'utf8');
-                    }
+                    templateHtml = fs.readFileSync(templatePath, 'utf8');
                 }
             }
         } catch (e) {
-            console.error('Error loading template:', e);
-            // Use default template
+            console.error('Error loading template (using default):', e.message);
         }
 
         // 4. Format dates for display
         const formattedIssueDate = new Date(issueDate).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
+            day: '2-digit', month: 'long', year: 'numeric',
         });
         const formattedExpiryDate = new Date(expiryDate).toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: 'long',
-            year: 'numeric',
+            day: '2-digit', month: 'long', year: 'numeric',
         });
 
-        // 5. Replace template placeholders & Generate PDF certificate
-        const pdfFilename = `${certificateNumber}.pdf`;
-        const certificateUrl = await generatePDF({
-            templateHtml,
-            data: {
-                certificateNumber,
-                companyName,
-                certificationType,
-                scope: scope || '',
-                issueDate: formattedIssueDate,
-                expiryDate: formattedExpiryDate,
-                qrCodeDataUrl,
-            },
-            outputFilename: pdfFilename,
-        });
+        // 5. Try to generate PDF via Puppeteer (optional - may fail on some environments)
+        let certificateUrl = null;
+        try {
+            const pdfFilename = `${certificateNumber}.pdf`;
+            certificateUrl = await generatePDF({
+                templateHtml,
+                data: {
+                    certificateNumber,
+                    companyName,
+                    certificationType,
+                    scope: scopeValue,
+                    issueDate: formattedIssueDate,
+                    expiryDate: formattedExpiryDate,
+                    qrCodeDataUrl,
+                },
+                outputFilename: pdfFilename,
+            });
+        } catch (pdfErr) {
+            console.error('PDF generation failed (non-fatal, saving record anyway):', pdfErr.message);
+            // Certificate record is still saved below without a PDF file
+        }
 
         // 6. Store certificate record in database
-        const certificate = await Certificate.create({
-            certificateNumber,
-            applicationId,
-            companyName,
-            certificationType,
-            scope,
-            issueDate,
-            expiryDate,
-            certificateUrl,
-            qrCodeUrl,
-        });
+        let finalCertificateUrl = certificateUrl;
+        if (req.file) {
+            finalCertificateUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const certificate = await Certificate.findOneAndUpdate(
+            { applicationId },
+            {
+                certificateNumber,
+                applicationId,
+                companyName,
+                certificationType,
+                scopeOfBusiness: scopeValue,
+                issueDate,
+                expiryDate,
+                certificateFileUrl: finalCertificateUrl,   // Prioritize uploaded file from frontend
+                qrCodeUrl,
+                authorizedSignatory: authorizedSignatory || '',
+            },
+            { new: true, upsert: true }
+        );
 
         // 7. Update application status
         await Application.findOneAndUpdate(
@@ -162,6 +176,7 @@ exports.generateCertificate = async (req, res, next) => {
             data: certificate,
         });
     } catch (error) {
+        console.error('generateCertificate error:', error);
         next(error);
     }
 };

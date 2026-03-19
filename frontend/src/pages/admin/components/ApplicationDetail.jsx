@@ -47,6 +47,7 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
 
     // Workflow States
     const [mouFile, setMouFile] = useState(null);
+    const [invoiceFile, setInvoiceFile] = useState(null);
     const [quotationAmount, setQuotationAmount] = useState('');
     const [assignAuditorName, setAssignAuditorName] = useState('');
     const [techReviewStatus, setTechReviewStatus] = useState('approved');
@@ -112,6 +113,8 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                         },
                         internals: {
                             quotationAmount: d.quotationAmount || '',
+                            invoiceDocument: d.invoiceDocument || null,
+                            invoiceStatus: d.invoiceStatus || 'pending_admin',
                             mouDocument: d.mouDocument || null,
                             mouStatus: d.mouStatus || 'pending_admin',
                             assignedAuditor: d.assignedAuditor || null,
@@ -144,17 +147,29 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
         }
     };
 
-    const handleUploadMOU = async (e) => {
+    const handleUploadInvoice = async (e) => {
         e.preventDefault();
-        if(!mouFile || !quotationAmount) return alert('MOU file and amount required');
+        if (!invoiceFile) return;
         const formData = new FormData();
-        formData.append('mouDocument', mouFile);
+        formData.append('invoiceDocument', invoiceFile);
         formData.append('quotationAmount', quotationAmount);
         try {
-            await applicationApi.uploadMOU(applicationId, formData);
-            alert('MOU uploaded successfully!');
+            await applicationApi.uploadInvoice(applicationId, formData);
+            alert('Invoice sent to client successfully!');
             window.location.reload();
-        } catch(error) { alert('Failed to upload MOU'); console.error(error); }
+        } catch(error) { alert('Failed to send invoice'); console.error(error); }
+    };
+
+    const handleUploadMOU = async (e) => {
+        e.preventDefault();
+        if(!mouFile) return alert('Please select the MOU PDF file');
+        const formData = new FormData();
+        formData.append('mouDocument', mouFile);
+        try {
+            await applicationApi.uploadMOU(applicationId, formData);
+            alert('Agreement sent to client successfully!');
+            window.location.reload();
+        } catch(error) { alert('Failed to upload Agreement'); console.error(error); }
     };
 
     const handleAssignAuditor = async (e) => {
@@ -207,6 +222,23 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
         );
     }
 
+    const getStatusLabel = (status) => {
+        const map = {
+            'submitted': 'Submitted',
+            'under_review': 'Under Review',
+            'invoice_sent': 'Invoice Sent',
+            'quotation_sent': 'MOU Sent',
+            'mou_accepted': 'Agreement Accepted',
+            'audit_assigned': 'Audit Assigned',
+            'audit_report_submitted': 'Audit Report Submitted',
+            'review_approved': 'Review Approved',
+            'certificate_generated': 'Cert Generated',
+            'completed': 'Completed',
+            'rejected': 'Rejected',
+        };
+        return map[status] || status.replace(/_/g, ' ');
+    };
+
     return (
         <div className="space-y-6">
             {/* Header / Actions */}
@@ -227,7 +259,7 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                         ['under_review', 'audit_assigned'].includes(currentStatus) ? 'bg-blue-100 text-blue-700' :
                                             'bg-yellow-100 text-yellow-700'
                                 }`}>
-                                {currentStatus.replace('_', ' ')}
+                                {getStatusLabel(currentStatus)}
                             </span>
                         </h2>
                         <p className="text-sm text-slate-500 font-medium">Application Details</p>
@@ -467,7 +499,8 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                 >
                                     <option value="submitted">Submitted</option>
                                     <option value="under_review">Under Review</option>
-                                    <option value="quotation_sent">Invoice Sent</option>
+                                    <option value="invoice_sent">Invoice Sent</option>
+                                    <option value="quotation_sent">Agreement Sent</option>
                                     <option value="mou_accepted">Agreement Accepted</option>
                                     <option value="audit_assigned">Audit Assigned</option>
                                     <option value="audit_report_submitted">Audit Report Submitted</option>
@@ -504,20 +537,55 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                         </div>
                     </div>
 
-                    {/* SECTION: Commercials & Quotation */}
+                    {/* SECTION: Step 2 — Invoice */}
                     {app.serviceType === 'iso' && !['submitted', 'rejected'].includes(currentStatus) && (
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                             <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
+                                <FileSignature className="w-5 h-5 text-blue-600" />
+                                <h3 className="font-bold text-slate-800">Step 2 — Invoice</h3>
+                            </div>
+                            <div className="p-6 space-y-4">
+                                {app.internals.invoiceStatus === 'sent_to_client' ? (
+                                    <div className="space-y-3">
+                                        <div className="flex justify-between items-center bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                                            <span className="text-sm font-semibold text-emerald-700 flex items-center gap-2"><CheckCircle className="w-4 h-4"/>Invoice Sent</span>
+                                            <span className="text-md font-bold text-slate-800">₹{app.internals.quotationAmount}</span>
+                                        </div>
+                                        {app.internals.invoiceDocument && (
+                                            <a href={`http://localhost:5000${app.internals.invoiceDocument}`} target="_blank" rel="noreferrer" className="w-full flex justify-center items-center gap-2 py-2 border border-blue-200 bg-blue-50 text-blue-700 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors">
+                                                <Eye className="w-4 h-4"/> View Sent Invoice
+                                            </a>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleUploadInvoice} className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Invoice Amount (₹)</label>
+                                            <input type="number" required value={quotationAmount} onChange={e=>setQuotationAmount(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Upload Invoice PDF</label>
+                                            <input type="file" required accept=".pdf" onChange={e=>setInvoiceFile(e.target.files[0])} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+                                        </div>
+                                        <button type="submit" className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm">
+                                            <UploadCloud className="w-4 h-4"/> Send Invoice to Client
+                                        </button>
+                                    </form>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* SECTION: Step 3 — MOU / Audit Agreement (only after invoice is sent) */}
+                    {app.serviceType === 'iso' && app.internals.invoiceStatus === 'sent_to_client' && currentStatus !== 'completed' && (
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                            <div className="border-b border-slate-100 bg-slate-50 px-6 py-4 flex items-center gap-2">
                                 <FileSignature className="w-5 h-5 text-emerald-600" />
-                                <h3 className="font-bold text-slate-800">Invoice & Audit Agreement</h3>
+                                <h3 className="font-bold text-slate-800">Step 3 — Audit Agreement (MOU)</h3>
                             </div>
                             <div className="p-6 space-y-4">
                                 {app.internals.mouStatus !== 'pending_admin' ? (
                                     <div className="space-y-3">
-                                        <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                            <span className="text-sm font-semibold text-slate-600">Invoice Amount</span>
-                                            <span className="text-md font-bold text-slate-800">₹{app.internals.quotationAmount}</span>
-                                        </div>
                                         <div className="flex justify-between items-center bg-slate-50 p-3 rounded-lg border border-slate-200">
                                             <span className="text-sm font-semibold text-slate-600">Agreement Status</span>
                                             <span className={`px-2 py-1 text-xs font-bold uppercase rounded-md ${app.internals.mouStatus === 'accepted' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{app.internals.mouStatus.replace('_', ' ')}</span>
@@ -531,15 +599,11 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                 ) : (
                                     <form onSubmit={handleUploadMOU} className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Invoice Amount (₹)</label>
-                                            <input type="number" required value={quotationAmount} onChange={e=>setQuotationAmount(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
-                                        </div>
-                                        <div>
                                             <label className="block text-sm font-semibold text-slate-700 mb-1.5">Upload Audit Agreement PDF</label>
                                             <input type="file" required accept=".pdf" onChange={e=>setMouFile(e.target.files[0])} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
                                         </div>
                                         <button type="submit" className="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm">
-                                            <UploadCloud className="w-4 h-4"/> Send to Client
+                                            <UploadCloud className="w-4 h-4"/> Send Agreement to Client
                                         </button>
                                     </form>
                                 )}

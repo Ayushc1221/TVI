@@ -75,6 +75,7 @@ const applicationSchema = new mongoose.Schema(
             enum: [
                 'submitted',
                 'under_review',
+                'invoice_sent',
                 'quotation_sent',
                 'mou_accepted',
                 'audit_assigned',
@@ -95,9 +96,17 @@ const applicationSchema = new mongoose.Schema(
             default: ''
         },
 
-        // --- NEW FIELDS FOR ISO WORKFLOW ---
-        // Commercials (Admin & Client)
+        // --- WORKFLOW FIELDS ---
+        // Step 2: Invoice
         quotationAmount: { type: Number },
+        invoiceDocument: { type: String }, // URL to uploaded Invoice PDF
+        invoiceStatus: {
+            type: String,
+            enum: ['pending_admin', 'sent_to_client'],
+            default: 'pending_admin'
+        },
+
+        // Step 3: MOU / Audit Agreement
         mouDocument: { type: String }, // URL to uploaded MOU PDF
         mouStatus: { 
             type: String, 

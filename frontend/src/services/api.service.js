@@ -180,6 +180,7 @@ export const applicationApi = {
     submit: (formData) => apiService.postFormData(API_ENDPOINTS.APPLICATIONS, formData),
     assignAuditor: (data) => apiService.put(API_ENDPOINTS.APPLICATION_ASSIGN_AUDITOR, data),
     updateStatus: (data) => apiService.put(API_ENDPOINTS.APPLICATION_STATUS, data),
+    uploadInvoice: (id, formData) => apiService.postFormData(`/applications/${id}/invoice`, formData),
     uploadMOU: (id, formData) => apiService.postFormData(API_ENDPOINTS.APPLICATION_UPLOAD_MOU(id), formData),
     techReview: (id, data) => apiService.post(API_ENDPOINTS.APPLICATION_TECH_REVIEW(id), data),
     verifyDocument: (id, docId) => apiService.put(`/applications/${id}/documents/${docId}/verify`),
