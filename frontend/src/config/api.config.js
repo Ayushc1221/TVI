@@ -46,6 +46,7 @@ export const API_ENDPOINTS = {
     // Certificates
     CERTIFICATE_GENERATE: '/certificates/generate',
     CERTIFICATE_DOWNLOAD: (id) => `/certificates/download/${id}`,
+    CERTIFICATE_NEXT_NUMBER: '/certificates/next-number',
     TEMPLATES: '/templates',
     CERTIFICATE_VERIFY: (certNumber) => `/certificates/verify/${certNumber}`,
 
@@ -64,6 +65,10 @@ export const API_ENDPOINTS = {
     CLIENT_ACCEPT_MOU: (id) => `/client/applications/${id}/accept-mou`,
 
     // Auditor
+    AUDITOR_REGISTER: '/auditor/register',
+    AUDITOR_REGISTRATIONS: '/auditor/registrations',
+    AUDITOR_UPDATE_STATUS: (id) => `/auditor/registrations/${id}/status`,
+    AUDITOR_APPROVED: '/auditor/approved',
     AUDITOR_ASSIGNMENTS: '/auditor/assignments',
     AUDITOR_SUBMIT_REPORT: (id) => `/auditor/assignments/${id}/report`,
 };

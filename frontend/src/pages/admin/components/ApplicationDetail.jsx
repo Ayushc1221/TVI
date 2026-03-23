@@ -1,7 +1,7 @@
 /* eslint-disable react/prop-types */
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Building2, User, FileJson, CheckCircle, FileText, Download, Eye, CreditCard, Activity, CheckSquare, Square, FileBadge, Loader2, FileSignature, UserCircle, ClipboardCheck, Scale, UploadCloud, AlertCircle, Clock } from 'lucide-react';
-import { applicationApi } from '../../../services';
+import { applicationApi, auditorApi } from '../../../services';
 
 // Fallback mock data for fields not yet in backend
 const fallbackDetails = {
@@ -50,8 +50,23 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
     const [invoiceFile, setInvoiceFile] = useState(null);
     const [quotationAmount, setQuotationAmount] = useState('');
     const [assignAuditorName, setAssignAuditorName] = useState('');
+    const [approvedAuditors, setApprovedAuditors] = useState([]);
     const [techReviewStatus, setTechReviewStatus] = useState('approved');
     const [techReviewNotes, setTechReviewNotes] = useState('');
+
+    useEffect(() => {
+        const fetchApprovedAuditors = async () => {
+            try {
+                const res = await auditorApi.getApproved();
+                if (res.success) {
+                    setApprovedAuditors(res.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch approved auditors', err);
+            }
+        };
+        fetchApprovedAuditors();
+    }, []);
 
     useEffect(() => {
         const fetchApp = async () => {
@@ -638,7 +653,19 @@ const ApplicationDetail = ({ applicationId, onBack }) => {
                                 ) : (
                                     <form onSubmit={handleAssignAuditor} className="space-y-4">
                                         <p className="text-xs text-slate-500 mb-2">Assign an auditor to begin the 5-day SLA timer.</p>
-                                        <input type="text" placeholder="Auditor Name or Email" value={assignAuditorName} onChange={e=>setAssignAuditorName(e.target.value)} className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500" />
+                                        <select
+                                            value={assignAuditorName}
+                                            onChange={e=>setAssignAuditorName(e.target.value)}
+                                            className="w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 bg-white"
+                                            required
+                                        >
+                                            <option value="" disabled>Select Auditor from Approved List...</option>
+                                            {approvedAuditors.map(a => (
+                                                <option key={a._id} value={a.personalInfo.email}>
+                                                    {a.personalInfo.fullName} ({a.personalInfo.email}) - {a.expertise?.isoStandards?.join(', ')}
+                                                </option>
+                                            ))}
+                                        </select>
                                         <button type="submit" className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold flex justify-center items-center gap-2 transition-colors text-sm">
                                             Assign Auditor
                                         </button>

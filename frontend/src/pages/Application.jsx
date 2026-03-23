@@ -30,8 +30,8 @@ const SERVICES = [
 ];
 
 const ISO_STANDARDS = [
-    'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 27001', 'ISO 22000',
-    'ISO 20000-1', 'ISO 50001', 'ISO 22301', 'ISO 37001', 'ISO 21001'
+    'ISO 9001', 'ISO 14001', 'ISO 45001',
+    'ISO 50001',
 ];
 
 const AUDIT_CATEGORIES = [
@@ -295,7 +295,7 @@ const Application = () => {
             setIsSubmitting(true);
             try {
                 const totalAmount = calculateFee();
-                
+
                 // 1. Load Razorpay Script
                 const res = await loadRazorpay();
                 if (!res) {

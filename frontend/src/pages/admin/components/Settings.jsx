@@ -273,8 +273,8 @@ const Settings = () => {
                                     <div className="grid grid-cols-2 gap-x-4 gap-y-3 mt-4 p-4 bg-slate-50/50 rounded-2xl border border-slate-100">
                                         <div className="col-span-2 text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1">Standard Specific Pricing</div>
                                         {[
-                                            'ISO 9001', 'ISO 14001', 'ISO 45001', 'ISO 27001', 'ISO 22000',
-                                            'ISO 20000-1', 'ISO 50001', 'ISO 22301', 'ISO 37001', 'ISO 21001'
+                                            'ISO 9001', 'ISO 14001', 'ISO 45001',
+                                            'ISO 50001'
                                         ].map(std => (
                                             <div key={std} className="flex flex-col gap-1">
                                                 <span className="text-[10px] font-bold text-slate-500 uppercase">{std}</span>

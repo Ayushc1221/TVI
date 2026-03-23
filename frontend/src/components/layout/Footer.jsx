@@ -14,6 +14,7 @@ const Footer = () => {
             { href: '#about', label: 'About Us' },
             { href: '#industries', label: 'Industries' },
             { href: '#verification', label: 'Verify Certificate' },
+            { href: '/auditor-registration', label: 'Register as Auditor' },
             { href: '#contact', label: 'Contact' },
         ],
         legal: [

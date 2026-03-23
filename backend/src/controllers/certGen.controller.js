@@ -54,6 +54,22 @@ const defaultTemplate = `
 </html>
 `;
 
+// @desc    Get next certificate number prediction
+// @route   GET /api/certificates/next-number?serviceType=iso
+// @access  Private
+exports.getNextCertificateNumber = async (req, res, next) => {
+    try {
+        const { serviceType } = req.query;
+        if (!serviceType) {
+            return res.status(400).json({ success: false, message: 'serviceType query param is required' });
+        }
+        const nextNumber = await generateCertificateNumber(serviceType.toUpperCase());
+        res.status(200).json({ success: true, data: nextNumber });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Generate a certificate (full pipeline)
 // @route   POST /api/certificates/generate
 // @access  Private
@@ -72,6 +88,7 @@ exports.generateCertificate = async (req, res, next) => {
             expiryDate,
             serviceType,
             authorizedSignatory,
+            certificateNumber: providedNumber // optional frontend override
         } = req.body;
 
         const scopeValue = scopeOfBusiness || scope || '';
@@ -83,8 +100,8 @@ exports.generateCertificate = async (req, res, next) => {
             });
         }
 
-        // 1. Generate certificate number automatically
-        const certificateNumber = await generateCertificateNumber(serviceType);
+        // 1. Generate certificate number automatically or use provided
+        const certificateNumber = providedNumber || await generateCertificateNumber(serviceType);
 
         // 2. Generate QR code containing verification link
         const qrCodeUrl = await generateQRCode(certificateNumber);

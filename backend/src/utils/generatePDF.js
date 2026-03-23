@@ -58,7 +58,11 @@ const generatePDF = async ({ templateHtml, data, outputFilename }) => {
     });
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'networkidle0' });
+    try {
+        await page.setContent(html, { waitUntil: 'networkidle2', timeout: 15000 });
+    } catch (e) {
+        console.warn('page.setContent timeout or error (non-fatal, generating PDF anyway):', e.message);
+    }
 
     await page.pdf({
         path: outputPath,

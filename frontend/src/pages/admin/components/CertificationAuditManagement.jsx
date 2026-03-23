@@ -5,10 +5,11 @@ import {
 } from 'lucide-react';
 import html2pdf from 'html2pdf.js';
 import QRCode from 'react-qr-code';
-import { certificateApi, applicationApi } from '../../../services';
+import { certificateApi, applicationApi, auditorApi } from '../../../services';
 
 const CertificationAuditManagement = ({ onViewDetails }) => {
     const [applications, setApplications] = useState([]);
+    const [approvedAuditors, setApprovedAuditors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterService, setFilterService] = useState('');
@@ -29,6 +30,21 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
     });
 
     const [sequenceCounters, setSequenceCounters] = useState({ iso: 1, audit: 1, hraa: 1 });
+
+    useEffect(() => {
+        fetchApprovedAuditors();
+    }, []);
+
+    const fetchApprovedAuditors = async () => {
+        try {
+            const res = await auditorApi.getApproved();
+            if (res.success) {
+                setApprovedAuditors(res.data);
+            }
+        } catch (err) {
+            console.error('Failed to fetch approved auditors', err);
+        }
+    };
 
     useEffect(() => {
         const delayDebounceFn = setTimeout(() => {
@@ -295,16 +311,21 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
                                                     <h4 className="font-semibold text-slate-800 text-sm">Assign Auditor / Consultant</h4>
                                                 </div>
                                                 <div className="flex gap-3">
-                                                    <input
-                                                        type="text"
+                                                    <select
                                                         id={`auditor-${app.id}`}
-                                                        placeholder="Enter name or email..."
                                                         defaultValue={app.auditor}
-                                                        className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    />
+                                                        className="flex-1 px-4 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                                    >
+                                                        <option value="" disabled>Select Auditor...</option>
+                                                        {approvedAuditors.map(a => (
+                                                            <option key={a._id} value={a.personalInfo.email}>
+                                                                {a.personalInfo.fullName} ({a.personalInfo.email}) - {a.expertise?.isoStandards?.join(', ')}
+                                                            </option>
+                                                        ))}
+                                                    </select>
                                                     <button
                                                         onClick={() => handleAssignAuditor(app.id, document.getElementById(`auditor-${app.id}`).value)}
-                                                        className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg text-sm hover:bg-slate-200 transition-colors"
+                                                        className="px-4 py-2 bg-slate-100 text-slate-700 font-medium rounded-lg text-sm hover:bg-slate-200 transition-colors shrink-0"
                                                     >
                                                         Assign
                                                     </button>
@@ -341,23 +362,31 @@ const CertificationAuditManagement = ({ onViewDetails }) => {
 
                                                 <div className="space-y-3">
                                                     <button
-                                                        onClick={() => {
-                                                            const today = new Date();
-                                                            const issueStr = today.toISOString().split('T')[0];
-                                                            today.setFullYear(today.getFullYear() + 3);
-                                                            const expiryStr = today.toISOString().split('T')[0];
-                                                            
-                                                            setCertFormData({
-                                                                certificateNumber: `TVI-${app.service}-${new Date().getFullYear()}-${sequenceCounters[app.service] || '001'}`,
-                                                                companyName: app.company,
-                                                                certificationType: app.service,
-                                                                scope: '',
-                                                                issueDate: issueStr,
-                                                                expiryDate: expiryStr,
-                                                                authorizedSignatory: 'Director',
-                                                                notes: ''
-                                                            });
-                                                            setShowGenerateModal(app.id);
+                                                        onClick={async () => {
+                                                            try {
+                                                                const res = await certificateApi.getNextNumber(app.service);
+                                                                const nextCertNumber = res.data;
+
+                                                                const today = new Date();
+                                                                const issueStr = today.toISOString().split('T')[0];
+                                                                today.setFullYear(today.getFullYear() + 3);
+                                                                const expiryStr = today.toISOString().split('T')[0];
+                                                                
+                                                                setCertFormData({
+                                                                    certificateNumber: nextCertNumber,
+                                                                    companyName: app.company,
+                                                                    certificationType: app.service,
+                                                                    scope: '',
+                                                                    issueDate: issueStr,
+                                                                    expiryDate: expiryStr,
+                                                                    authorizedSignatory: 'Director',
+                                                                    notes: ''
+                                                                });
+                                                                setShowGenerateModal(app.id);
+                                                            } catch (err) {
+                                                                console.error("Error fetching next cert number:", err);
+                                                                alert("Failed to retrieve next certificate number. Please check connection.");
+                                                            }
                                                         }}
                                                         disabled={app.status === 'completed'}
                                                         className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white py-2.5 rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"

@@ -7,7 +7,8 @@ import {
     Award,
     FolderOpen,
     Users,
-    Settings
+    Settings,
+    UserPlus
 } from 'lucide-react';
 
 import Sidebar from './components/Sidebar';
@@ -20,6 +21,7 @@ import CertificationAuditManagement from './components/CertificationAuditManagem
 import DocumentsModule from './components/DocumentsModule';
 import UsersModule from './components/UsersModule';
 import SettingsModule from './components/Settings';
+import AuditorManagement from './components/AuditorManagement';
 
 const AdminDashboard = () => {
     const navigate = useNavigate();
@@ -42,6 +44,7 @@ const AdminDashboard = () => {
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'applications', label: 'Verify Applications', icon: FileText },
         { id: 'payments', label: 'Invoices & Payments', icon: CreditCard },
+        { id: 'auditors_management', label: 'Auditor Registrations', icon: UserPlus },
         { id: 'auditor_assignments', label: 'Assign Auditor', icon: Users },
         { id: 'documents', label: 'Documents', icon: FolderOpen },
         { id: 'users', label: 'Users / Clients', icon: Users },
@@ -78,6 +81,10 @@ const AdminDashboard = () => {
 
         if (activeTab === 'certifications' || activeTab === 'auditor_assignments') {
             return <CertificationAuditManagement onViewDetails={(id) => setSelectedApplicationId(id)} />;
+        }
+
+        if (activeTab === 'auditors_management') {
+            return <AuditorManagement />;
         }
 
         if (activeTab === 'documents') {

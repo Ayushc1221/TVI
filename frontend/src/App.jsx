@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Application from "./pages/Application";
 import VerifyPage from "./pages/VerifyPage";
+import AuditorRegistration from "./pages/public/AuditorRegistration";
 import { AdminLogin, AdminDashboard } from "./pages/admin";
 import { AuditorLogin, AuditorDashboard } from "./pages/auditor";
 import { ClientLogin, ClientDashboard } from "./pages/client";
@@ -19,6 +20,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/apply" element={<Application />} />
           <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/auditor-registration" element={<AuditorRegistration />} />
 
           {/* Admin Routes */}
           <Route path="/admin/login" element={<AdminLogin />} />

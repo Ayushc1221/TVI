@@ -193,6 +193,7 @@ export const certificateApi = {
         : apiService.post(API_ENDPOINTS.CERTIFICATE_GENERATE, data),
     download: (id) => `${apiService.baseURL}${API_ENDPOINTS.CERTIFICATE_DOWNLOAD(id)}`,
     verify: (certNumber) => apiService.get(API_ENDPOINTS.CERTIFICATE_VERIFY(certNumber)),
+    getNextNumber: (serviceType) => apiService.get(API_ENDPOINTS.CERTIFICATE_NEXT_NUMBER, { serviceType }),
 };
 
 // Payment API
@@ -239,6 +240,13 @@ export const clientApi = {
 
 // Auditor API
 export const auditorApi = {
+    // Public
+    register: (formData) => apiService.postFormData(API_ENDPOINTS.AUDITOR_REGISTER, formData),
+    // Admin
+    getRegistrations: (params) => apiService.get(API_ENDPOINTS.AUDITOR_REGISTRATIONS, params),
+    updateStatus: (id, data) => apiService.put(API_ENDPOINTS.AUDITOR_UPDATE_STATUS(id), data),
+    getApproved: () => apiService.get(API_ENDPOINTS.AUDITOR_APPROVED),
+    // Auditor
     getAssignments: () => {
         const token = localStorage.getItem('auditor_token');
         return apiService.request(API_ENDPOINTS.AUDITOR_ASSIGNMENTS, {

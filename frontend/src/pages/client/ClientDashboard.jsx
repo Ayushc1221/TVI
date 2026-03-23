@@ -292,7 +292,18 @@ const ClientDashboard = () => {
 
                         {/* Action Area for Download */}
                         {(app.status === 'certificate_generated' || app.status === 'completed') && (
-                            <div className="p-5 border-t border-slate-100 bg-indigo-50/30 flex justify-end gap-3">
+                            <div className="p-5 border-t border-slate-100 bg-indigo-50/30 flex flex-wrap justify-end gap-3">
+                                {app.auditReportDocument && (
+                                    <a 
+                                        href={`http://localhost:5000${app.auditReportDocument}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="bg-white border text-emerald-700 border-emerald-600 hover:bg-emerald-50 px-6 py-2 rounded-lg font-medium flex items-center gap-2 shadow-sm transition-colors"
+                                    >
+                                        <FileText className="w-4 h-4" />
+                                        Audit Report
+                                    </a>
+                                )}
                                 <a 
                                     href={certificateApi.download(app.applicationId)}
                                     target="_blank"

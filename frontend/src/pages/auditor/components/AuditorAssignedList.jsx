@@ -239,13 +239,13 @@ const AuditorAssignedList = () => {
                                     <h3 className="font-bold text-slate-800 text-lg">{app.companyName}</h3>
                                     {getSLABadge(app.auditAssignedDate, app.status)}
                                 </div>
-                                <div className="text-sm font-medium text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
-                                    <span>ID: {app.applicationId}</span>
-                                    <span>•</span>
-                                    <span>Standard: {app.certificationType}</span>
-                                    <span>•</span>
-                                    <span>Location: {app.siteLocation || 'N/A'}</span>
-                                </div>
+                                    <div className="text-sm font-medium text-slate-500 flex flex-wrap gap-x-4 gap-y-1">
+                                        <span>ID: {app.applicationId}</span>
+                                        <span>•</span>
+                                        <span>Standard: {app.certificationType}</span>
+                                        <span>•</span>
+                                        <span>Location: {[app.city, app.state].filter(Boolean).join(', ') || 'N/A'}</span>
+                                    </div>
                             </div>
                             
                             <div className="flex items-center gap-3">

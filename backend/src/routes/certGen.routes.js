@@ -1,9 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const { generateCertificate, downloadCertificate } = require('../controllers/certGen.controller');
+const { generateCertificate, downloadCertificate, getNextCertificateNumber } = require('../controllers/certGen.controller');
 const { verifyCertificate } = require('../controllers/certificate.controller');
 const { authenticate } = require('../middleware');
 const upload = require('../middleware/upload');
+
+// GET /api/certificates/next-number
+router.get('/next-number', authenticate, getNextCertificateNumber);
 
 // POST /api/certificates/generate
 router.post('/generate', authenticate, upload.single('certificateFile'), generateCertificate);
