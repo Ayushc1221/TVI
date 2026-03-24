@@ -287,8 +287,8 @@ const AuditorRegistration = () => {
                                 <Input required name="industry" value={formData.industry} onChange={handleTextChange} placeholder="e.g. Manufacturing, IT" />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Audits Conducted Previously</label>
-                                <Input type="number" name="auditsConducted" value={formData.auditsConducted} onChange={handleTextChange} placeholder="0" />
+                                <label className="text-sm font-medium text-slate-700">Audits Conducted & Past Clients</label>
+                                <Input type="text" name="auditsConducted" value={formData.auditsConducted} onChange={handleTextChange} placeholder="e.g. 10 (Tata Motors, Reliance)" />
                             </div>
                             <div className="space-y-2">
                                 <label className="text-sm font-medium text-slate-700">Primary Audit Type *</label>

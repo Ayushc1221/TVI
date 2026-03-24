@@ -38,7 +38,7 @@ const auditorSchema = new mongoose.Schema({
         currentOrg: { type: String },
         designation: { type: String },
         industry: { type: String, required: true },
-        auditsConducted: { type: Number, default: 0 }
+        auditsConducted: { type: String, default: '0' }
     },
     // Audit Expertise
     expertise: {

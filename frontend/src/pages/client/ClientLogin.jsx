@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Phone, Mail, UserCheck } from 'lucide-react';
+import { Phone, Mail, UserCheck, Eye, EyeOff } from 'lucide-react';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
@@ -12,6 +12,7 @@ const ClientLogin = () => {
         email: '',
         phone: '',
     });
+    const [showPassword, setShowPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -80,7 +81,6 @@ const ClientLogin = () => {
                                 Registered Email Address
                             </label>
                             <div className="relative">
-                                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <Input
                                     type="email"
                                     name="email"
@@ -88,7 +88,7 @@ const ClientLogin = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     required
-                                    className="pl-10 h-12"
+                                    className="px-4 h-12"
                                 />
                             </div>
                         </div>
@@ -96,19 +96,24 @@ const ClientLogin = () => {
                         {/* Phone Field */}
                         <div className="space-y-2">
                             <label className="text-sm font-medium text-slate-700">
-                                Registered Phone Number
+                                Password
                             </label>
                             <div className="relative">
-                                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                                 <Input
-                                    type="text"
+                                    type={showPassword ? 'text' : 'password'}
                                     name="phone"
-                                    placeholder="Enter your phone number (Password)"
+                                    placeholder="Enter password"
                                     value={formData.phone}
                                     onChange={handleChange}
                                     required
-                                    className="pl-10 h-12"
+                                    className="pl-4 pr-10 h-12"
                                 />
+                                <div
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 cursor-pointer hover:text-slate-400 select-none"
+                                >
+                                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                </div>
                             </div>
                         </div>
 

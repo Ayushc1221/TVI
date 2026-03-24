@@ -121,7 +121,7 @@ exports.registerAuditor = async (req, res, next) => {
                 currentOrg: data.currentOrg,
                 designation: data.designation,
                 industry: data.industry,
-                auditsConducted: data.auditsConducted || 0
+                auditsConducted: data.auditsConducted || '0'
             },
             expertise: {
                 isoStandards: data.isoStandards ? (Array.isArray(data.isoStandards) ? data.isoStandards : JSON.parse(data.isoStandards)) : [],
