@@ -34,11 +34,11 @@ const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminU
                             <p className="font-semibold text-sm text-slate-700 leading-tight">{adminUser.name || 'Admin'}</p>
                             <p className="text-xs text-slate-500 leading-tight border-none">{roleLabel || 'Administrator'}</p>
                         </div>
-                        <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
+                        {/* <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" /> */}
                     </button>
 
                     {/* Dropdown Menu */}
-                    {profileDropdownOpen && (
+                    {/* {profileDropdownOpen && (
                         <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-slate-100 py-1 flex flex-col z-50 animate-in fade-in slide-in-from-top-2">
                             <div className="px-4 py-3 border-b border-slate-100 md:hidden">
                                 <p className="font-semibold text-sm text-slate-700">{adminUser.name || 'Admin'}</p>
@@ -58,7 +58,7 @@ const Header = ({ activeTab, profileDropdownOpen, setProfileDropdownOpen, adminU
                                 <LogOut className="w-4 h-4" /> Logout
                             </button>
                         </div>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Explicit Logout Button */}
